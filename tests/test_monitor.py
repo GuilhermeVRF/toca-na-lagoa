@@ -219,6 +219,31 @@ async def test_should_retire_missing_listings_only_from_successful_sources(sessi
     assert session.get(SourceStatus, ("netimoveis", "rent")).ok is False
 
 
+async def test_should_keep_listings_when_source_returns_malformed_data(
+    session,
+    telegram_configured,
+    sent_messages,
+):
+    await monitor.run_check([FakeSource("zap", [found("favorite")])])
+    favorite("favorite")
+
+    class MalformedSource:
+        name = "zap"
+
+        async def fetch(self, client, criteria):
+            raise KeyError("hits")
+
+    result = await monitor.run_check(
+        [MalformedSource(), FakeSource("netimoveis", [found("other", source="netimoveis")])],
+    )
+
+    active = {listing.external_id: listing.active for listing in all_listings()}
+    assert active == {"favorite": True, "other": True}
+    assert result.errors == ["ZAP: resposta inválida (KeyError)"]
+    assert session.get(SourceStatus, ("zap", "rent")).ok is False
+    assert sent_messages == []
+
+
 async def test_should_alert_cross_posted_apartment_once(session, telegram_configured, sent_messages):
     await monitor.run_check([FakeSource("zap", []), FakeSource("vivareal", [])])
     listing = found("1", rent=1500)
