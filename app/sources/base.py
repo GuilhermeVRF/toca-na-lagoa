@@ -13,6 +13,13 @@ class SourceError(Exception):
     """Raised when a source cannot be fetched or its response cannot be parsed."""
 
 
+def describe_error(error: Exception) -> str:
+    """Short label for a fetch error, with the HTTP status when the server answered one."""
+    if isinstance(error, httpx.HTTPStatusError):
+        return f"HTTP {error.response.status_code}"
+    return error.__class__.__name__
+
+
 @dataclass(frozen=True)
 class SearchCriteria:
     """What the user is looking for, as configured in the UI.

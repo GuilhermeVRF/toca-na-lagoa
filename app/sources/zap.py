@@ -11,7 +11,7 @@ import logging
 import httpx
 
 from app.config import RENT, SALE, SECONDS_BETWEEN_REQUESTS, USER_AGENT
-from app.sources.base import FoundListing, SearchCriteria, SourceError
+from app.sources.base import FoundListing, SearchCriteria, SourceError, describe_error
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ class GlueSource:
             response.raise_for_status()
             return response.json()["search"]
         except (httpx.HTTPError, ValueError, KeyError) as error:
-            raise SourceError(f"{self.name}: {error.__class__.__name__} em {neighborhood}") from error
+            raise SourceError(f"{self.name}: {describe_error(error)} em {neighborhood}") from error
 
 
 def parse_item(item: dict, source: str, site_url: str, business: str = RENT) -> FoundListing | None:
