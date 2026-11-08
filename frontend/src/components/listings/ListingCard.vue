@@ -1,8 +1,4 @@
-<!--
-  One apartment: photo, prices, details, copies on other portals and price
-  history. Listings for sale show the price and the estimated mortgage instead
-  of the monthly rent.
--->
+<!-- One apartment: photo, prices, details, copies on other portals and price history. -->
 <script setup>
 import { computed, ref } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
@@ -17,17 +13,14 @@ defineEmits(['toggle-favorite', 'toggle-hidden']);
 const { sourceLabel, kindLabel } = useOptions();
 const showHistory = ref(false);
 const listing = computed(() => props.card.listing);
-const isSale = computed(() => listing.value.business === 'sale');
-const financing = computed(() => props.card.financing);
 
 const priceChanged = computed(() => props.card.previous_total && props.card.previous_total !== listing.value.total);
 const priceDropped = computed(() => props.card.previous_total && props.card.previous_total > listing.value.total);
-const charges = computed(() => {
-  if (listing.value.source !== 'quintoandar') return `cond. ${formatBrl(listing.value.condo)} · IPTU ${formatBrl(listing.value.iptu)}`;
-  return isSale.value ? `cond.+IPTU ${formatBrl(listing.value.condo)}` : `cond.+IPTU+taxas ${formatBrl(listing.value.total - listing.value.rent)}`;
-});
-const priceDetails = computed(() => (isSale.value ? charges.value : `aluguel ${formatBrl(listing.value.rent)} · ${charges.value}`));
-const perMonth = computed(() => (isSale.value ? '' : '/mês'));
+const charges = computed(() =>
+  listing.value.source === 'quintoandar'
+    ? `cond.+IPTU+taxas ${formatBrl(listing.value.total - listing.value.rent)}`
+    : `cond. ${formatBrl(listing.value.condo)} · IPTU ${formatBrl(listing.value.iptu)}`,
+);
 const bedrooms = computed(() => {
   const count = listing.value.bedrooms;
   return `${count || 'sem'} quarto${count === 1 ? '' : 's'}`;
@@ -59,7 +52,7 @@ const historyNewestFirst = computed(() => [...props.card.history].reverse());
     <div class="flex flex-1 flex-col p-4">
       <div class="flex items-start justify-between gap-2">
         <div>
-          <p class="text-2xl font-extrabold tracking-tight">{{ formatBrl(listing.total) }}<span class="text-sm font-medium text-slate-400">{{ perMonth }}</span></p>
+          <p class="text-2xl font-extrabold tracking-tight">{{ formatBrl(listing.total) }}<span class="text-sm font-medium text-slate-400">/mês</span></p>
           <p v-if="priceChanged" class="text-xs text-slate-400">antes <s>{{ formatBrl(card.previous_total) }}</s></p>
         </div>
         <div class="flex gap-1">
@@ -85,29 +78,14 @@ const historyNewestFirst = computed(() => [...props.card.history].reverse());
         </div>
       </div>
 
-      <p class="mt-1 text-xs text-slate-500">{{ priceDetails }}</p>
-
-      <div v-if="financing" class="mt-3 rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-800 dark:bg-brand-500/10 dark:text-brand-300">
-        <p class="flex items-baseline justify-between gap-2">
-          <span>Parcela estimada</span>
-          <span><b class="text-sm">{{ formatBrl(financing.first_installment) }}</b>/mês</span>
-        </p>
-        <p v-if="financing.last_installment !== financing.first_installment" class="text-right text-brand-700/70 dark:text-brand-300/70">
-          caindo até {{ formatBrl(financing.last_installment) }} na última
-        </p>
-        <p class="mt-1 flex items-baseline justify-between gap-2 border-t border-brand-200/60 pt-1 dark:border-brand-500/20">
-          <span>Com cond. e IPTU</span>
-          <b>{{ formatBrl(financing.monthly_cost) }}/mês</b>
-        </p>
-        <p class="text-brand-700/70 dark:text-brand-300/70">entrada {{ formatBrl(financing.down_payment) }} · financia {{ formatBrl(financing.financed) }}</p>
-      </div>
+      <p class="mt-1 text-xs text-slate-500">aluguel {{ formatBrl(listing.rent) }} · {{ charges }}</p>
 
       <p class="mt-3 truncate font-semibold leading-snug" :title="`${kindLabel(listing.kind)} · ${listing.neighborhood}`">{{ kindLabel(listing.kind) }} · {{ listing.neighborhood }}</p>
       <p class="h-5 truncate text-sm text-slate-500" :title="listing.address">{{ listing.address }}</p>
 
       <div class="mt-3 flex flex-wrap gap-1.5 text-xs">
         <span v-if="listing.area" class="rounded-md bg-slate-100 px-2 py-1 dark:bg-slate-800">{{ listing.area }} m²</span>
-        <span v-if="card.price_per_m2" class="rounded-md bg-slate-100 px-2 py-1 dark:bg-slate-800">{{ formatBrl(Math.round(card.price_per_m2)) }}/m²</span>
+        <span v-if="card.price_per_m2" class="rounded-md bg-slate-100 px-2 py-1 dark:bg-slate-800">R$ {{ Math.round(card.price_per_m2) }}/m²</span>
         <span class="rounded-md bg-slate-100 px-2 py-1 dark:bg-slate-800">{{ bedrooms }}</span>
         <span v-if="listing.furnished" class="rounded-md bg-brand-50 px-2 py-1 font-medium text-brand-700 dark:bg-brand-500/15 dark:text-brand-400">mobiliado</span>
       </div>

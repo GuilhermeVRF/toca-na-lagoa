@@ -1,19 +1,17 @@
-<!-- Listings header: count, last check, per-portal status of the page's business and the "check now" button. -->
+<!-- Listings header: count, last check, per-portal status and the "check now" button. -->
 <script setup>
 import { computed } from 'vue';
 import AppIcon from '../ui/AppIcon.vue';
 import { useMonitor } from '../../core/injection.js';
 import { formatDateTime } from '../../core/format.js';
 
-const props = defineProps({
+defineProps({
   count: { type: Number, required: true },
-  business: { type: String, required: true },
 });
 
 const monitor = useMonitor();
 const status = monitor.status;
 const busy = monitor.busy;
-const sources = computed(() => status.value?.sources.filter((source) => source.business === props.business) ?? []);
 const lastCheck = computed(() =>
   status.value?.last_check_at ? `Última verificação ${formatDateTime(status.value.last_check_at)}` : '',
 );
@@ -22,7 +20,7 @@ const lastCheck = computed(() =>
 <template>
   <div class="flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
     <div>
-      <p class="text-sm font-medium uppercase tracking-wider text-white/60">Apartamentos {{ business === 'sale' ? 'à venda' : 'para alugar' }}</p>
+      <p class="text-sm font-medium uppercase tracking-wider text-white/60">Apartamentos para alugar</p>
       <h1 class="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">{{ count }} opções na Pampulha</h1>
       <p class="mt-2 text-sm text-white/70">
         <template v-if="lastCheck">{{ lastCheck }}</template>
@@ -39,9 +37,9 @@ const lastCheck = computed(() =>
       {{ busy ? 'Buscando… (1–3 min)' : 'Verificar agora' }}
     </button>
   </div>
-  <div v-if="sources.length" class="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
+  <div v-if="status?.sources.length" class="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
     <span
-      v-for="source in sources"
+      v-for="source in status.sources"
       :key="source.source"
       :title="source.error || null"
       class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1"

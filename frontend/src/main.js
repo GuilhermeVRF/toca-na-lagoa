@@ -38,9 +38,8 @@ const services = {
 const toasts = createToastStore();
 const auth = createAuthStore(services.auth);
 const router = createRouter([
-  { path: '/', label: 'Alugar', component: markRaw(ListingsPage), props: { business: 'rent' }, nav: true },
-  { path: '/comprar', label: 'Comprar', component: markRaw(ListingsPage), props: { business: 'sale' }, nav: true },
-  { path: '/settings', label: 'Configurações', shortLabel: 'Ajustes', component: markRaw(SettingsPage), nav: true },
+  { path: '/', label: 'Apartamentos', component: markRaw(ListingsPage), nav: true },
+  { path: '/settings', label: 'Configurações', component: markRaw(SettingsPage), nav: true },
   { path: LOGIN_PATH, label: 'Entrar', component: markRaw(LoginPage), nav: false },
 ]);
 const monitor = createMonitorStore(services.monitor, toasts);

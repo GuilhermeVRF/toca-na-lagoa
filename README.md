@@ -1,6 +1,6 @@
 # 🏠 Toca na Lagoa
 
-Monitor pessoal de apartamentos para alugar ou comprar na região da **Pampulha, em Belo Horizonte**.
+Monitor pessoal de apartamentos para alugar na região da **Pampulha, em Belo Horizonte**.
 
 Criei este projeto para uso próprio, para encontrar meu apartamento em BH: em vez de abrir
 QuintoAndar, ZAP, VivaReal e Netimóveis várias vezes por dia, o app faz isso por mim, junta tudo
@@ -14,17 +14,12 @@ num painel só e me avisa no Telegram quando aparece algo novo ou quando um favo
 - **Busca em 4 portais** — QuintoAndar, ZAP Imóveis, VivaReal e Netimóveis — filtrando por
   bairros, número de quartos, área máxima e **faixa de preço** (valor total = aluguel +
   condomínio + IPTU).
-- **Compra com financiamento (opcional)**: ligada em Configurações, faz uma segunda busca de
-  apartamentos à venda, com quartos, área e faixa de preço próprios, e mostra o resultado na aba
-  **Comprar**. Cada card traz a **parcela estimada** (SAC ou Price, com entrada, juros e prazo
-  configuráveis) e o custo mensal com condomínio e IPTU, que também serve de filtro e de ordenação.
-  A estimativa não inclui seguros nem taxas do banco.
 - **Junta anúncios repetidos**: o mesmo apartamento anunciado em mais de um site vira um card só,
   com links para as outras cópias (no máximo uma cópia por site).
 - **Histórico de preço** de cada anúncio.
 - **Alertas no Telegram**:
   - apartamentos **novos** que batem com a busca;
-  - **favoritos**: avisa quando um favorito **sai do ar** (provavelmente alugado ou vendido), **volta** a ser
+  - **favoritos**: avisa quando um favorito **sai do ar** (provavelmente alugado), **volta** a ser
     anunciado ou **muda de preço** — mesmo que saia da faixa de preço.
 - **Painel reativo**: filtros, favoritos e configurações atualizam sem recarregar a página, e a
   lista se atualiza sozinha quando uma verificação agendada termina.
@@ -49,7 +44,6 @@ app/                    API FastAPI
 ├── auth.py             login por senha e cookie de sessão assinado
 ├── schemas.py          entrada/saída e validação (mensagens em português)
 ├── monitor.py          rotina de verificação: busca, guarda, agrupa e alerta
-├── financing.py        estimativa de parcelas (SAC e Price)
 ├── sources/            um coletor por portal
 ├── dedup.py            agrupamento do mesmo apartamento entre portais
 ├── views.py            montagem dos cards da listagem

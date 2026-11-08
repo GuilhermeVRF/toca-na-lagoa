@@ -9,12 +9,8 @@ DIGITS_PATTERN = re.compile(r"\d+")
 
 
 def matches_criteria(listing: FoundListing, criteria: SearchCriteria) -> bool:
-    """Whether a listing is a small, affordable residential unit inside the wanted neighborhoods.
-
-    The price range applies to ``listing.total``: the monthly cost of a rental
-    or the price of a sale. Sales can also be capped by their estimated monthly cost.
-    """
-    if listing.kind is None or listing.base_price <= 0:
+    """Whether a listing is a small, affordable residential rental inside the wanted neighborhoods."""
+    if listing.kind is None or listing.rent <= 0:
         return False
     if listing.bedrooms > criteria.max_bedrooms:
         return False
@@ -23,12 +19,6 @@ def matches_criteria(listing: FoundListing, criteria: SearchCriteria) -> bool:
     if criteria.min_total is not None and listing.total < criteria.min_total:
         return False
     if criteria.max_total is not None and listing.total > criteria.max_total:
-        return False
-    if (
-        criteria.max_monthly is not None
-        and criteria.financing is not None
-        and listing.monthly_cost(criteria.financing) > criteria.max_monthly
-    ):
         return False
     wanted = {normalize_text(name) for name in criteria.neighborhoods}
     return normalize_text(listing.neighborhood) in wanted or normalize_text(listing.alt_neighborhood) in wanted

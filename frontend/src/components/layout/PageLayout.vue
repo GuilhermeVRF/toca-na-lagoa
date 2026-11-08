@@ -23,11 +23,11 @@ const { isDark, toggle: toggleTheme } = useTheme();
           </span>
           <span class="min-w-0">
             <span class="block truncate text-lg font-bold leading-tight">Toca na Lagoa</span>
-            <span class="hidden text-xs text-white/70 sm:block">Aluguel e compra · Pampulha, BH</span>
+            <span class="hidden text-xs text-white/70 sm:block">Aluguel para 1 pessoa · Pampulha, BH</span>
           </span>
         </RouterLink>
 
-        <div class="order-3 grid w-full grid-cols-3 gap-1 rounded-xl bg-white/10 p-1 ring-1 ring-white/15 backdrop-blur sm:order-2 sm:ml-auto sm:flex sm:w-auto">
+        <div class="order-3 grid w-full grid-cols-2 gap-1 rounded-xl bg-white/10 p-1 ring-1 ring-white/15 backdrop-blur sm:order-2 sm:ml-auto sm:flex sm:w-auto">
           <RouterLink
             v-for="route in navRoutes"
             :key="route.path"
@@ -36,8 +36,7 @@ const { isDark, toggle: toggleTheme } = useTheme();
             active-class="bg-white text-brand-700 shadow dark:bg-white/90"
             inactive-class="text-white/80 hover:bg-white/10 hover:text-white"
           >
-            <span class="sm:hidden">{{ route.shortLabel ?? route.label }}</span>
-            <span class="hidden sm:inline">{{ route.label }}</span>
+            {{ route.label }}
           </RouterLink>
         </div>
 

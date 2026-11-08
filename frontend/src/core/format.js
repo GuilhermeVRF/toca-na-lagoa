@@ -1,7 +1,6 @@
 /** Formatting and parsing of the values shown in the UI (pt-BR). */
 
 const BRL = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
-const DECIMAL = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
 
 export function formatBrl(value) {
   return value === null || value === undefined ? '—' : `R$ ${BRL.format(value)}`;
@@ -9,10 +8,6 @@ export function formatBrl(value) {
 
 export function formatNumber(value) {
   return value === null || value === undefined ? '' : BRL.format(value);
-}
-
-export function formatDecimal(value) {
-  return value === null || value === undefined ? '' : DECIMAL.format(value);
 }
 
 /** Naive ISO timestamps from the API are already in local time; read their parts directly. */
@@ -45,16 +40,6 @@ export function parseInteger(text) {
   const digits = String(text ?? '').replace(/R\$|\.|\s/g, '');
   if (!digits) return null;
   return /^\d+$/.test(digits) ? Number(digits) : Number.NaN;
-}
-
-/**
- * Parse "11,5", "11.5%" or "" into a number (null when blank), with a comma or
- * a dot as decimal separator. Returns NaN for anything else.
- */
-export function parseDecimal(text) {
-  const cleaned = String(text ?? '').replace(/%|\s/g, '').replace(',', '.');
-  if (!cleaned) return null;
-  return /^\d+(\.\d+)?$/.test(cleaned) ? Number(cleaned) : Number.NaN;
 }
 
 export function normalizeText(text) {

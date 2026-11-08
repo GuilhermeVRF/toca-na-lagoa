@@ -46,9 +46,3 @@ def test_should_pair_the_closest_copy_first():
         [candidate(1, "zap", price=1500), candidate(2, "vivareal", price=1560), candidate(3, "vivareal", price=1500)]
     )
     assert groups == {1: 1, 2: None, 3: 1}
-
-
-def test_should_not_group_a_rental_with_a_sale():
-    rental = candidate(1, "zap")
-    sale = GroupCandidate(listing_id=2, source="vivareal", neighborhood="Castelo", area=40, price=1500, business="sale")
-    assert assign_groups([rental, sale]) == {1: None, 2: None}

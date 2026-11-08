@@ -16,7 +16,9 @@ def init_db() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     SQLModel.metadata.create_all(engine)
     _add_missing_columns()
+    _delete_sale_rows()
     _rebuild_tables_with_changed_keys()
+    _drop_removed_columns()
     with Session(engine) as session:
         if session.get(Settings, 1) is None:
             session.add(Settings(id=1))
@@ -46,6 +48,29 @@ def _default_clause(connection: Connection, default) -> str:
         return ""
     value = literal(default.arg).compile(dialect=connection.dialect, compile_kwargs={"literal_binds": True})
     return f" DEFAULT {value}"
+
+
+def _delete_sale_rows() -> None:
+    """Delete the rows stored by the search of listings for sale, which was removed.
+
+    Rentals and sales were keyed by ``business``; once only rentals are left the
+    tables can go back to their old keys without two rows colliding.
+    """
+    with engine.begin() as connection:
+        if "business" in _stored_columns(connection, "listing"):
+            connection.execute(
+                text(
+                    "DELETE FROM pricehistory WHERE listing_id IN (SELECT id FROM listing WHERE business != 'rent')",
+                ),
+            )
+            connection.execute(text("DELETE FROM listing WHERE business != 'rent'"))
+        if "business" in _stored_columns(connection, "sourcestatus"):
+            connection.execute(text("DELETE FROM sourcestatus WHERE business != 'rent'"))
+
+
+def _stored_columns(connection: Connection, table_name: str) -> set[str]:
+    """Column names of a table as stored in the database."""
+    return {column["name"] for column in inspect(connection).get_columns(table_name)}
 
 
 def _rebuild_tables_with_changed_keys() -> None:
@@ -91,6 +116,19 @@ def _rebuild_table(connection: Connection, table: Table) -> None:
     connection.execute(text(f'ALTER TABLE "{staging.name}" RENAME TO "{table.name}"'))
     for index in table.indexes:
         index.create(connection)
+
+
+def _drop_removed_columns() -> None:
+    """Drop stored columns the models no longer declare.
+
+    Runs after ``_rebuild_tables_with_changed_keys``, which already drops the
+    columns of the tables it recreates, including indexed ones that SQLite
+    could not drop here.
+    """
+    with engine.begin() as connection:
+        for table in SQLModel.metadata.sorted_tables:
+            for name in sorted(_stored_columns(connection, table.name) - set(table.columns.keys())):
+                connection.execute(text(f'ALTER TABLE "{table.name}" DROP COLUMN "{name}"'))
 
 
 def get_session() -> Iterator[Session]:

@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 # httpx logs full request URLs at INFO, which would leak the Telegram bot token.
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
-SPA_ROUTES = ("/", "/comprar", "/settings", "/login")
+SPA_ROUTES = ("/", "/settings", "/login")
 
 
 @asynccontextmanager

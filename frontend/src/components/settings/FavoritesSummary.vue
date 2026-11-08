@@ -31,7 +31,7 @@ onBeforeUnmount(monitor.onCheckFinished(load));
         {{ summary.available }} disponível(is)<template v-if="summary.gone"> · <b>{{ summary.gone }} saiu(saíram) do ar</b></template>.
       </template>
       <template v-else-if="summary">Nenhum favorito ainda — marque a ⭐ nos anúncios.</template>
-      Você recebe um alerta quando um favorito <b>sai do ar</b> (provavelmente alugado ou vendido), <b>volta</b> a ser anunciado ou
+      Você recebe um alerta quando um favorito <b>sai do ar</b> (provavelmente alugado), <b>volta</b> a ser anunciado ou
       <b>muda de preço</b> — mesmo que saia da faixa de preço.
     </p>
   </div>

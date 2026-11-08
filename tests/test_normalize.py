@@ -1,11 +1,7 @@
 """Tests for parsing helpers and the listing filter."""
 
-from dataclasses import replace
-
 import pytest
 
-from app.config import SALE
-from app.financing import FinancingTerms
 from app.normalize import canonical_neighborhood, format_brl, matches_criteria, normalize_text, parse_area, parse_brl
 from app.sources.base import FoundListing, SearchCriteria
 
@@ -111,36 +107,3 @@ def test_should_use_configured_spelling_of_neighborhood():
 def test_should_fall_back_to_alternative_name_for_canonical_neighborhood():
     listing = make_listing(neighborhood="Vila Qualquer", alt_neighborhood="ouro preto")
     assert canonical_neighborhood(listing, CRITERIA.neighborhoods) == "Ouro Preto"
-
-
-SALE_CRITERIA = SearchCriteria(
-    neighborhoods=["Ouro Preto"],
-    max_bedrooms=2,
-    max_area=None,
-    max_total=400_000,
-    business=SALE,
-    max_monthly=3_400,
-    financing=FinancingTerms(down_payment_percent=20, yearly_rate_percent=12, term_years=30),
-)
-
-
-def test_should_use_sale_price_as_total_of_a_sale():
-    listing = make_listing(business=SALE, rent=0, sale_price=350_000, total_override=500)
-    assert (listing.base_price, listing.total) == (350_000, 350_000)
-
-
-@pytest.mark.parametrize(
-    ("sale_price", "expected"),
-    [(300_000, True), (450_000, False), (0, False)],
-)
-def test_should_apply_price_range_to_sale_price(sale_price, expected):
-    listing = make_listing(business=SALE, rent=0, sale_price=sale_price, condo=0, iptu=0)
-    assert matches_criteria(listing, replace(SALE_CRITERIA, max_monthly=None)) is expected
-
-
-def test_should_reject_sale_whose_monthly_cost_is_above_limit():
-    listing = make_listing(business=SALE, rent=0, sale_price=320_000, condo=300, iptu=50)
-    first_installment = 3_140
-    assert listing.monthly_cost(SALE_CRITERIA.financing) == first_installment + 350
-    assert matches_criteria(listing, SALE_CRITERIA) is False
-    assert matches_criteria(listing, replace(SALE_CRITERIA, max_monthly=3_600)) is True

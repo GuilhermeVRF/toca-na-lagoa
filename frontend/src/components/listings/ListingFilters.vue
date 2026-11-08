@@ -16,7 +16,6 @@ import { SELECT_FILTERS, TOGGLE_FILTERS, clearedFilters, countActiveFilters } fr
 const props = defineProps({
   neighborhoods: { type: Array, required: true },
   resultCount: { type: Number, required: true },
-  business: { type: String, required: true },
 });
 const filters = defineModel({ type: Object, required: true });
 
@@ -51,7 +50,7 @@ const clear = () => { filters.value = clearedFilters(filters.value); };
 <template>
   <div class="card mb-6 overflow-hidden">
     <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-      <SortBar v-model="filters" :labels="options.sort_labels[business] ?? {}" />
+      <SortBar v-model="filters" />
     </div>
 
     <div class="hidden items-center gap-2 px-4 py-3 sm:flex">

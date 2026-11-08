@@ -5,8 +5,7 @@ import { ref } from 'vue';
 const EMPTY_OPTIONS = {
   source_labels: {},
   kind_labels: {},
-  sort_labels: { rent: {}, sale: {} },
-  financing_system_labels: {},
+  sort_labels: {},
   default_neighborhoods: [],
   neighborhood_suggestions: [],
 };
