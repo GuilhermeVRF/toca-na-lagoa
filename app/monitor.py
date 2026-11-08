@@ -152,6 +152,17 @@ async def _fetch_all(
                 status.ok, status.error = False, str(error)
                 session.add(status)
                 continue
+            except (AttributeError, IndexError, KeyError, TypeError, ValueError) as error:
+                # A portal can change its JSON shape while still returning HTTP 200.
+                # Treat expected parsing failures like a source outage so the rest of
+                # the check can continue and listings from this source are not retired.
+                label = SOURCE_LABELS.get(source.name, source.name)
+                message = f"{label}: resposta inválida ({error.__class__.__name__})"
+                logger.warning("Source %s returned malformed data: %r", source.name, error)
+                result.errors.append(message)
+                status.ok, status.error = False, message
+                session.add(status)
+                continue
             favorite_ids = _favorite_ids(session, source.name, criteria.business)
             matching = _unique(listing for listing in fetched if matches_criteria(listing, criteria))
             kept_favorites = _unique(
