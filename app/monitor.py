@@ -11,10 +11,9 @@ from sqlmodel import Session, col, select
 
 from app import telegram
 from app.browser_http import browser_client
-from app.config import KIND_LABELS, RENT, REQUEST_TIMEOUT_SECONDS, SALE, SOURCE_LABELS, TIMEZONE
+from app.config import KIND_LABELS, REQUEST_TIMEOUT_SECONDS, SOURCE_LABELS, TIMEZONE
 from app.db import engine, load_settings
 from app.dedup import GroupCandidate, are_same_apartment, assign_groups
-from app.financing import SYSTEM_LABELS, FinancingTerms, estimate
 from app.models import Listing, PriceHistory, Settings, SourceStatus
 from app.normalize import canonical_neighborhood, format_brl, matches_criteria
 from app.sources.base import FoundListing, SearchCriteria, Source, SourceError
@@ -70,7 +69,7 @@ def is_check_running() -> bool:
 
 
 async def run_check(sources: list[Source] | None = None) -> CheckResult:
-    """Run a full check of every source, once per searched business (rentals, then sales).
+    """Run a full check of every source.
 
     Concurrent calls (scheduler + "check now" button) are serialized.
 
@@ -85,17 +84,13 @@ async def run_check(sources: list[Source] | None = None) -> CheckResult:
             settings = load_settings(session)
             now = datetime.now(TIMEZONE).replace(tzinfo=None)
             result = CheckResult()
-            filled: list[str] = []
-            for business in settings.businesses():
-                criteria = _criteria(settings, business)
-                found_by_source = await _fetch_all(sources or all_sources(), criteria, session, now, result)
-                result.new += len(_store_listings(session, found_by_source, business, now))
-                if found_by_source:
-                    filled.append(business)
+            found_by_source = await _fetch_all(sources or all_sources(), _criteria(settings), session, now, result)
+            new_ids = _store_listings(session, found_by_source, now)
+            result.new = len(new_ids)
             _regroup(session)
             await _alert(session, settings, result)
-            for business in filled:
-                settings.mark_initial_sync_done(business)
+            if found_by_source:
+                settings.initial_sync_done = True
             settings.last_check_at = now
             settings.last_check_status = result.status_text
             session.add(settings)
@@ -104,19 +99,8 @@ async def run_check(sources: list[Source] | None = None) -> CheckResult:
             return result
 
 
-def _criteria(settings: Settings, business: str = RENT) -> SearchCriteria:
-    """Search criteria of one business from the user's settings."""
-    if business == SALE:
-        return SearchCriteria(
-            neighborhoods=settings.neighborhood_list,
-            max_bedrooms=settings.sale_max_bedrooms,
-            max_area=settings.sale_max_area,
-            min_total=settings.sale_min_price,
-            max_total=settings.sale_max_price,
-            business=SALE,
-            max_monthly=settings.sale_max_monthly,
-            financing=settings.financing_terms,
-        )
+def _criteria(settings: Settings) -> SearchCriteria:
+    """Search criteria from the user's settings."""
     return SearchCriteria(
         neighborhoods=settings.neighborhood_list,
         max_bedrooms=settings.max_bedrooms,
@@ -141,8 +125,7 @@ async def _fetch_all(
     found_by_source: dict[str, list[FoundListing]] = {}
     async with browser_client(REQUEST_TIMEOUT_SECONDS) as client:
         for source in sources:
-            key = (source.name, criteria.business)
-            status = session.get(SourceStatus, key) or SourceStatus(source=source.name, business=criteria.business)
+            status = session.get(SourceStatus, source.name) or SourceStatus(source=source.name)
             status.last_run_at = now
             try:
                 fetched = await source.fetch(client, criteria)
@@ -163,7 +146,7 @@ async def _fetch_all(
                 status.ok, status.error = False, message
                 session.add(status)
                 continue
-            favorite_ids = _favorite_ids(session, source.name, criteria.business)
+            favorite_ids = _favorite_ids(session, source.name)
             matching = _unique(listing for listing in fetched if matches_criteria(listing, criteria))
             kept_favorites = _unique(
                 listing
@@ -179,16 +162,10 @@ async def _fetch_all(
     return found_by_source
 
 
-def _favorite_ids(session: Session, source_name: str, business: str) -> set[str]:
-    """External ids of the user's favorites of one business on one source."""
+def _favorite_ids(session: Session, source_name: str) -> set[str]:
+    """External ids of the user's favorites on one source."""
     return set(
-        session.exec(
-            select(Listing.external_id).where(
-                Listing.source == source_name,
-                Listing.business == business,
-                Listing.favorite,
-            ),
-        ).all(),
+        session.exec(select(Listing.external_id).where(Listing.source == source_name, Listing.favorite)).all(),
     )
 
 
@@ -200,10 +177,9 @@ def _unique(listings: Iterable[FoundListing]) -> list[FoundListing]:
 def _store_listings(
     session: Session,
     found_by_source: dict[str, list[FoundListing]],
-    business: str,
     now: datetime,
 ) -> list[int]:
-    """Insert or update listings of one business, record price changes and retire listings that disappeared.
+    """Insert or update listings, record price changes and retire listings that disappeared.
 
     Returns:
         Ids of listings seen for the first time.
@@ -212,9 +188,7 @@ def _store_listings(
     for source_name, found in found_by_source.items():
         stored = {
             listing.external_id: listing
-            for listing in session.exec(
-                select(Listing).where(Listing.source == source_name, Listing.business == business),
-            ).all()
+            for listing in session.exec(select(Listing).where(Listing.source == source_name)).all()
         }
         for item in found:
             existing = stored.pop(item.external_id, None)
@@ -234,7 +208,6 @@ def _insert(session: Session, item: FoundListing, now: datetime) -> int:
     listing = Listing(
         **_listing_fields(item),
         source=item.source,
-        business=item.business,
         external_id=item.external_id,
         first_seen=now,
         last_seen=now,
@@ -266,7 +239,6 @@ def _listing_fields(item: FoundListing) -> dict:
         "bedrooms": item.bedrooms,
         "area": item.area,
         "rent": item.rent,
-        "sale_price": item.sale_price,
         "condo": item.condo,
         "iptu": item.iptu,
         "total": item.total,
@@ -295,36 +267,29 @@ def _group_candidate(listing: Listing) -> GroupCandidate:
         source=listing.source,
         neighborhood=listing.neighborhood,
         area=listing.area,
-        price=listing.base_price,
-        business=listing.business,
+        price=listing.rent,
     )
 
 
 async def _alert(session: Session, settings: Settings, result: CheckResult) -> None:
     """Find new listings and favorite updates, send them to Telegram and mark them as delivered.
 
-    The first check of each business only fills the database. Undelivered alerts
-    stay pending and are retried on the next check; without Telegram configured
-    they are dropped.
+    The first check only fills the database. Undelivered alerts stay pending and
+    are retried on the next check; without Telegram configured they are dropped.
     """
     new_alerts = _pending_new(session)
     favorite_alerts = _pending_favorite_updates(session)
     result.favorite_updates = len(favorite_alerts)
-
-    def filled_before(alert: Alert) -> bool:
-        """Whether an earlier check already filled the listings of the alert's business."""
-        return settings.initial_sync_done_for(alert.listing.business)
-
-    _mark_delivered(session, [alert for alert in new_alerts + favorite_alerts if not filled_before(alert)])
-    new_alerts = [alert for alert in new_alerts if filled_before(alert)]
-    favorite_alerts = [alert for alert in favorite_alerts if filled_before(alert)]
+    if not settings.initial_sync_done:
+        _mark_delivered(session, new_alerts + favorite_alerts)
+        return
     if not (new_alerts or favorite_alerts):
         return
     if not settings.telegram_configured:
         _mark_delivered(session, new_alerts + favorite_alerts)
         return
     try:
-        for message in format_alert_messages(new_alerts, favorite_alerts, settings.financing_terms):
+        for message in format_alert_messages(new_alerts, favorite_alerts):
             await telegram.send_message(settings.telegram_bot_token, settings.telegram_chat_id, message)
     except telegram.TelegramError as error:
         result.errors.append(f"Telegram: {error}")
@@ -397,7 +362,6 @@ def _active_copies(session: Session, listing: Listing) -> list[str]:
     others = session.exec(
         select(Listing).where(
             Listing.active,
-            Listing.business == listing.business,
             Listing.source != listing.source,
             Listing.neighborhood == listing.neighborhood,
         ),
@@ -420,30 +384,15 @@ def _mark_delivered(session: Session, alerts: list[Alert]) -> None:
         session.add(alert.listing)
 
 
-def format_alert_messages(
-    new_alerts: list[Alert],
-    favorite_alerts: list[Alert],
-    financing: FinancingTerms | None = None,
-) -> list[str]:
-    """Build Telegram HTML messages, split to stay under Telegram's length limit.
-
-    Args:
-        new_alerts: Listings seen for the first time.
-        favorite_alerts: Favorites whose price or availability changed.
-        financing: Terms used to show the estimated installment of listings for sale.
-    """
+def format_alert_messages(new_alerts: list[Alert], favorite_alerts: list[Alert]) -> list[str]:
+    """Build Telegram HTML messages, split to stay under Telegram's length limit."""
     blocks: list[str] = []
     if favorite_alerts:
         blocks.append(f"⭐ <b>{len(favorite_alerts)} novidade(s) nos favoritos</b>")
         blocks.extend(_format_favorite_update(alert) for alert in favorite_alerts)
-    new_rentals = [alert for alert in new_alerts if alert.listing.business != SALE]
-    new_sales = [alert for alert in new_alerts if alert.listing.business == SALE]
-    if new_rentals:
-        blocks.append(f"🏠 <b>{len(new_rentals)} apartamento(s) novo(s) na Pampulha</b>")
-        blocks.extend(_format_listing(alert) for alert in new_rentals)
-    if new_sales:
-        blocks.append(f"🔑 <b>{len(new_sales)} apartamento(s) novo(s) à venda na Pampulha</b>")
-        blocks.extend(_format_sale_listing(alert, financing) for alert in new_sales)
+    if new_alerts:
+        blocks.append(f"🏠 <b>{len(new_alerts)} apartamento(s) novo(s) na Pampulha</b>")
+        blocks.extend(_format_listing(alert) for alert in new_alerts)
 
     messages: list[str] = []
     current = ""
@@ -476,37 +425,14 @@ def _format_listing(alert: Alert) -> str:
     )
 
 
-def _format_sale_listing(alert: Alert, financing: FinancingTerms | None) -> str:
-    """Format one new listing for sale, with its estimated installment when terms are known."""
-    listing = alert.listing
-    kind = KIND_LABELS.get(listing.kind, "Apartamento")
-    lines = [f"<b>{escape(kind)} · {escape(listing.neighborhood)}</b>", f"🔑 <b>{format_brl(listing.total)}</b>"]
-    if financing is not None:
-        loan = estimate(listing.total, financing)
-        lines.append(
-            f"🏦 parcela ~{format_brl(loan.first_installment)}/mês ({SYSTEM_LABELS.get(financing.system, '')}, "
-            f"entrada {format_brl(loan.down_payment)})",
-        )
-    details = [f"cond. {format_brl(listing.condo)}"]
-    if listing.area:
-        details.append(f"{listing.area} m²")
-    details.append(f"{listing.bedrooms} quarto(s)")
-    source = SOURCE_LABELS.get(listing.source, listing.source)
-    lines.append(" · ".join(details))
-    lines.append(f'<a href="{escape(listing.url)}">Ver no {source}</a>')
-    return "\n".join(lines)
-
-
 def _format_favorite_update(alert: Alert) -> str:
     """Format what changed on a favorite: it left the portal, came back, or changed price."""
     listing = alert.listing
     kind = KIND_LABELS.get(listing.kind, "Apartamento")
     source = SOURCE_LABELS.get(listing.source, listing.source)
-    is_sale = listing.business == SALE
-    per_month = "" if is_sale else "/mês"
     lines = [f"<b>{escape(kind)} · {escape(listing.neighborhood)}</b>"]
     if not listing.active and alert.previous_active:
-        lines.append(f"🚫 Saiu do ar no {source} — provavelmente foi {'vendido' if is_sale else 'alugado'}")
+        lines.append(f"🚫 Saiu do ar no {source} — provavelmente foi alugado")
         if alert.still_listed_on:
             lines.append(f"Ainda anunciado no {escape(', '.join(alert.still_listed_on))}")
     elif listing.active and alert.previous_active is False:
@@ -515,10 +441,10 @@ def _format_favorite_update(alert: Alert) -> str:
         change = (listing.total - alert.previous_total) / alert.previous_total * 100
         icon = "📉" if change < 0 else "📈"
         lines.append(
-            f"{icon} <s>{format_brl(alert.previous_total)}</s> → <b>{format_brl(listing.total)}</b>{per_month} "
+            f"{icon} <s>{format_brl(alert.previous_total)}</s> → <b>{format_brl(listing.total)}</b>/mês "
             f"({change:+.0f}%)".replace("-", "−"),
         )
     else:
-        lines.append(f"💰 <b>{format_brl(listing.total)}</b>{per_month}")
+        lines.append(f"💰 <b>{format_brl(listing.total)}</b>/mês")
     lines.append(f'<a href="{escape(listing.url)}">Ver no {source}</a>')
     return "\n".join(lines)

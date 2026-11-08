@@ -1,4 +1,4 @@
-<!-- Search criteria for renting and buying, and the schedule. Edits a local draft and saves it as a whole. -->
+<!-- Search criteria and schedule. Edits a local draft and saves it as a whole. -->
 <script setup>
 import { reactive, ref, watch } from 'vue';
 import ToggleSwitch from '../ui/ToggleSwitch.vue';
@@ -6,7 +6,6 @@ import NeighborhoodPicker from './NeighborhoodPicker.vue';
 import PriceRangeInput from './PriceRangeInput.vue';
 import CheckTimesEditor from './CheckTimesEditor.vue';
 import FavoritesSummary from './FavoritesSummary.vue';
-import SaleSettingsFields from './SaleSettingsFields.vue';
 import { useOptions, useServices, useToasts } from '../../core/injection.js';
 import { toDraft, toPayload } from '../../core/settingsDraft.js';
 
@@ -50,8 +49,6 @@ async function save() {
 
       <NeighborhoodPicker v-model="draft.neighborhoods" :suggestions="options.neighborhood_suggestions" :defaults="options.default_neighborhoods" />
 
-      <h3 class="border-t border-slate-100 pt-5 text-sm font-bold dark:border-slate-800">Aluguel</h3>
-
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="block">
           <span class="label">Máximo de quartos</span>
@@ -65,19 +62,13 @@ async function save() {
 
       <PriceRangeInput v-model:min="draft.min_total" v-model:max="draft.max_total" legend="Faixa de preço (R$ total/mês, vazio = sem limite)" />
 
-      <h3 class="border-t border-slate-100 pt-5 text-sm font-bold dark:border-slate-800">Compra</h3>
-
-      <SaleSettingsFields v-model="draft" :system-labels="options.financing_system_labels" />
-
-      <h3 class="border-t border-slate-100 pt-5 text-sm font-bold dark:border-slate-800">Alertas</h3>
-
       <FavoritesSummary />
 
       <CheckTimesEditor v-model="draft.check_times" />
 
       <p class="rounded-xl bg-brand-50 px-4 py-3 text-xs leading-relaxed text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">
-        A busca guarda só os anúncios que batem com bairros, quartos, área e faixa de preço (no aluguel, valor total = aluguel + condomínio + IPTU; na compra, o preço do imóvel).
-        A primeira verificação de cada aba apenas preenche a lista; a partir da segunda, você recebe os apartamentos <b>novos</b> e as <b>novidades dos favoritos</b>.
+        A busca guarda só os anúncios que batem com bairros, quartos, área e faixa de preço (valor total = aluguel + condomínio + IPTU).
+        A primeira verificação apenas preenche a lista; a partir da segunda, você recebe os apartamentos <b>novos</b> e as <b>novidades dos favoritos</b>.
       </p>
 
       <button type="submit" class="btn-primary" :disabled="saving">{{ saving ? 'Salvando…' : 'Salvar configurações' }}</button>

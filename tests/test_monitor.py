@@ -6,26 +6,23 @@ import pytest
 from sqlmodel import Session, select
 
 from app import monitor, telegram
-from app.config import RENT, SALE
 from app.db import engine, load_settings
 from app.models import Listing, PriceHistory, SourceStatus
 from app.sources.base import FoundListing, SearchCriteria, SourceError
 
 
 class FakeSource:
-    """Source returning the fixed listings of the requested business, or raising when ``error`` is set."""
+    """Source returning a fixed list, or raising when ``error`` is set."""
 
     def __init__(self, name: str, listings: list[FoundListing], error: str = "") -> None:
         self.name = name
         self.listings = listings
         self.error = error
-        self.searched: list[str] = []
 
     async def fetch(self, client, criteria: SearchCriteria) -> list[FoundListing]:
-        self.searched.append(criteria.business)
         if self.error:
             raise SourceError(self.error)
-        return [listing for listing in self.listings if listing.business == criteria.business]
+        return self.listings
 
 
 def found(external_id: str, rent: int = 1500, source: str = "zap", **overrides) -> FoundListing:
@@ -216,7 +213,7 @@ async def test_should_retire_missing_listings_only_from_successful_sources(sessi
     active = {listing.external_id: listing.active for listing in all_listings()}
     assert active == {"1": False, "9": True}
     assert result.errors == ["Netimóveis: ReadTimeout"]
-    assert session.get(SourceStatus, ("netimoveis", "rent")).ok is False
+    assert session.get(SourceStatus, "netimoveis").ok is False
 
 
 async def test_should_keep_listings_when_source_returns_malformed_data(
@@ -240,7 +237,7 @@ async def test_should_keep_listings_when_source_returns_malformed_data(
     active = {listing.external_id: listing.active for listing in all_listings()}
     assert active == {"favorite": True, "other": True}
     assert result.errors == ["ZAP: resposta inválida (KeyError)"]
-    assert session.get(SourceStatus, ("zap", "rent")).ok is False
+    assert session.get(SourceStatus, "zap").ok is False
     assert sent_messages == []
 
 
@@ -284,80 +281,3 @@ def test_should_split_long_alert_into_several_messages():
     messages = monitor.format_alert_messages(alerts, [])
     assert len(messages) > 1
     assert all(len(message) <= monitor.MAX_MESSAGE_LENGTH for message in messages)
-
-
-def for_sale(external_id: str, price: int = 300_000, source: str = "zap", **overrides) -> FoundListing:
-    """A listing for sale that matches the default sale settings."""
-    return found(external_id, source=source, rent=0, business=SALE, sale_price=price, condo=300, **overrides)
-
-
-@pytest.fixture
-def sales_enabled(session):
-    """Turn the sale search on with the default financing terms."""
-    settings = load_settings(session)
-    settings.sale_enabled = True
-    session.add(settings)
-    session.commit()
-
-
-async def test_should_search_only_rentals_while_sales_are_off(session):
-    source = FakeSource("zap", [found("1"), for_sale("2")])
-    await monitor.run_check([source])
-    assert source.searched == [RENT]
-    assert [listing.business for listing in all_listings()] == [RENT]
-
-
-async def test_should_store_the_same_unit_once_per_business(session, sales_enabled):
-    await monitor.run_check([FakeSource("zap", [found("1"), for_sale("1")])])
-    stored = all_listings()
-    assert sorted((listing.business, listing.total) for listing in stored) == [(RENT, 1500), (SALE, 300_000)]
-    assert {listing.group_id for listing in stored} == {None}
-    assert session.get(SourceStatus, ("zap", SALE)).found == 1
-
-
-async def test_should_fill_sales_silently_once_even_after_rentals_were_filled(
-    session,
-    telegram_configured,
-    sent_messages,
-):
-    await monitor.run_check([FakeSource("zap", [found("1")])])
-    settings = load_settings(session)
-    settings.sale_enabled = True
-    session.add(settings)
-    session.commit()
-
-    await monitor.run_check([FakeSource("zap", [found("1"), for_sale("10")])])
-    assert sent_messages == []
-
-    await monitor.run_check([FakeSource("zap", [found("1"), for_sale("10"), for_sale("11", price=320_000)])])
-    assert len(sent_messages) == 1
-    assert "1 apartamento(s) novo(s) à venda" in sent_messages[0]
-    assert "R$ 320.000" in sent_messages[0]
-    assert "/mês (SAC, entrada R$ 64.000)" in sent_messages[0]
-
-
-async def test_should_say_a_retired_favorite_for_sale_was_probably_sold(
-    session,
-    telegram_configured,
-    sales_enabled,
-    sent_messages,
-):
-    await monitor.run_check([FakeSource("zap", [for_sale("1")])])
-    with Session(engine) as db_session:
-        listing = db_session.exec(select(Listing)).one()
-        listing.favorite = True
-        listing.start_watching()
-        db_session.add(listing)
-        db_session.commit()
-
-    await monitor.run_check([FakeSource("zap", [])])
-    assert "provavelmente foi vendido" in sent_messages[0]
-
-
-async def test_should_apply_sale_criteria_to_sales(session, sales_enabled):
-    settings = load_settings(session)
-    settings.sale_max_price = 350_000
-    session.add(settings)
-    session.commit()
-    await monitor.run_check([FakeSource("zap", [for_sale("cheap", 300_000), for_sale("pricey", 400_000)])])
-    assert [listing.external_id for listing in all_listings()] == ["cheap"]

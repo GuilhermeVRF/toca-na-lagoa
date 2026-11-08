@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 
-from app.config import RENT
 from app.normalize import normalize_text
 
 MAX_AREA_DIFFERENCE_M2 = 3
@@ -18,15 +17,13 @@ class GroupCandidate:
     neighborhood: str
     area: int | None
     price: int
-    business: str = RENT
 
 
 def assign_groups(candidates: list[GroupCandidate]) -> dict[int, int | None]:
     """Group listings that look like the same apartment on different sources.
 
-    Two listings match when they come from different sources, are offered the
-    same way (to rent or to buy), are in the same neighborhood, have known areas
-    within 3 m² and prices within 5%. The closest matches are joined first, and
+    Two listings match when they come from different sources, are in the same
+    neighborhood, have known areas within 3 m² and prices within 5%. The closest matches are joined first, and
     a group never holds two listings from the same portal: otherwise similar
     units of one building or street chain into a single huge group.
 
@@ -72,9 +69,7 @@ def _difference(first: GroupCandidate, second: GroupCandidate) -> tuple[float, i
 
 def are_same_apartment(first: GroupCandidate, second: GroupCandidate) -> bool:
     """Whether two listings from different sources describe the same apartment."""
-    if first.source == second.source or first.business != second.business:
-        return False
-    if first.area is None or second.area is None:
+    if first.source == second.source or first.area is None or second.area is None:
         return False
     if normalize_text(first.neighborhood) != normalize_text(second.neighborhood):
         return False

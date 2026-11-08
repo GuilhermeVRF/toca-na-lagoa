@@ -35,7 +35,7 @@ describe('HttpClient', () => {
 describe('ListingsService', () => {
   it('sends only the active filters as query parameters', async () => {
     const http = { get: vi.fn().mockResolvedValue({ cards: [] }) };
-    await new ListingsService(http).list('sale', filtersFromQuery({ favorites: '1' }));
-    expect(http.get).toHaveBeenCalledWith('/api/listings', { business: 'sale', sort: 'total', order: 'asc', favorites: '1' });
+    await new ListingsService(http).list(filtersFromQuery({ favorites: '1' }));
+    expect(http.get).toHaveBeenCalledWith('/api/listings', { sort: 'total', order: 'asc', favorites: '1' });
   });
 });

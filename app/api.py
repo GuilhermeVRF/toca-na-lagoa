@@ -10,16 +10,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session, select
 
 from app import telegram
-from app.config import DEFAULT_NEIGHBORHOODS, KIND_LABELS, SALE, SOURCE_LABELS
+from app.config import DEFAULT_NEIGHBORHOODS, KIND_LABELS, SOURCE_LABELS
 from app.db import get_session, load_settings
-from app.financing import SYSTEM_LABELS
 from app.models import Listing, SourceStatus
 from app.monitor import is_check_running, run_check
 from app.scheduler import apply_schedule
 from app.schemas import (
     CardOut,
     FavoritesSummaryOut,
-    FinancingTermsOut,
     ListingOut,
     ListingsOut,
     ListingUpdate,
@@ -49,7 +47,6 @@ def get_options(session: SessionDep) -> OptionsOut:
         source_labels=SOURCE_LABELS,
         kind_labels=KIND_LABELS,
         sort_labels=SORT_LABELS,
-        financing_system_labels=SYSTEM_LABELS,
         default_neighborhoods=DEFAULT_NEIGHBORHOODS,
         neighborhood_suggestions=sorted(set(DEFAULT_NEIGHBORHOODS) | set(seen_neighborhoods)),
     )
@@ -57,15 +54,11 @@ def get_options(session: SessionDep) -> OptionsOut:
 
 @router.get("/listings")
 def get_listings(request: Request, session: SessionDep) -> ListingsOut:
-    """Listings of one business (``business=rent|sale``) matching the filters given as query parameters."""
+    """Listings matching the filters given as query parameters."""
     filters = ListingFilters.from_query(dict(request.query_params))
-    settings = load_settings(session)
-    financing = settings.financing_terms if filters.business == SALE else None
     return ListingsOut(
-        cards=[CardOut.from_card(card) for card in build_listing_cards(session, filters, financing)],
-        neighborhoods=neighborhood_options(session, filters.business),
-        search_enabled=filters.business in settings.businesses(),
-        financing=FinancingTermsOut.from_terms(financing) if financing else None,
+        cards=[CardOut.from_card(card) for card in build_listing_cards(session, filters)],
+        neighborhoods=neighborhood_options(session),
     )
 
 
@@ -116,7 +109,7 @@ async def check_now(session: SessionDep) -> StatusOut:
 def _status(session: Session) -> StatusOut:
     """Assemble the monitor status."""
     settings = load_settings(session)
-    statuses = session.exec(select(SourceStatus).order_by(SourceStatus.business, SourceStatus.source)).all()
+    statuses = session.exec(select(SourceStatus).order_by(SourceStatus.source)).all()
     return StatusOut(
         last_check_at=settings.last_check_at,
         last_check_status=settings.last_check_status,
@@ -133,11 +126,7 @@ def get_settings(session: SessionDep) -> SettingsOut:
 
 @router.put("/settings")
 def update_settings(update: SettingsUpdate, session: SessionDep) -> SettingsOut:
-    """Persist the search settings and reschedule checks.
-
-    Turning sales off forgets their first fill, so turning them back on later
-    fills the list again instead of alerting every listing found meanwhile.
-    """
+    """Persist the search settings and reschedule checks."""
     settings = load_settings(session)
     settings.enabled = update.enabled
     settings.check_times = ",".join(update.check_times)
@@ -146,18 +135,6 @@ def update_settings(update: SettingsUpdate, session: SessionDep) -> SettingsOut:
     settings.max_area = update.max_area
     settings.min_total = update.min_total
     settings.max_total = update.max_total
-    if not update.sale_enabled:
-        settings.sale_initial_sync_done = False
-    settings.sale_enabled = update.sale_enabled
-    settings.sale_max_bedrooms = update.sale_max_bedrooms
-    settings.sale_max_area = update.sale_max_area
-    settings.sale_min_price = update.sale_min_price
-    settings.sale_max_price = update.sale_max_price
-    settings.sale_max_monthly = update.sale_max_monthly
-    settings.financing_down_payment_percent = update.financing_down_payment_percent
-    settings.financing_rate = update.financing_rate
-    settings.financing_term_years = update.financing_term_years
-    settings.financing_system = update.financing_system
     session.add(settings)
     session.commit()
     apply_schedule(settings)

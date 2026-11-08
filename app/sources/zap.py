@@ -10,7 +10,7 @@ import logging
 
 import httpx
 
-from app.config import RENT, SALE, SECONDS_BETWEEN_REQUESTS, USER_AGENT
+from app.config import SECONDS_BETWEEN_REQUESTS, USER_AGENT
 from app.sources.base import FoundListing, SearchCriteria, SourceError, describe_error
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,6 @@ API_URL = "https://glue-api.zapimoveis.com.br/v2/listings"
 PAGE_SIZE = 30
 MAX_PAGES_PER_NEIGHBORHOOD = 10
 IMAGE_SIZE = "360x240"
-BUSINESS_TYPES = {RENT: "RENTAL", SALE: "SALE"}
 
 PORTALS: dict[str, tuple[str, str]] = {
     "zap": (".zapimoveis.com.br", "https://www.zapimoveis.com.br"),
@@ -36,7 +35,7 @@ KINDS: dict[str, str] = {
 
 
 class GlueSource:
-    """Searches rentals or sales on ZAP or VivaReal, one neighborhood at a time."""
+    """Searches rentals on ZAP or VivaReal, one neighborhood at a time."""
 
     def __init__(self, name: str) -> None:
         """Bind the source to one portal ("zap" or "vivareal")."""
@@ -44,31 +43,29 @@ class GlueSource:
         self.domain, self.site_url = PORTALS[name]
 
     async def fetch(self, client: httpx.AsyncClient, criteria: SearchCriteria) -> list[FoundListing]:
-        """Fetch listings with 1 to ``criteria.max_bedrooms`` bedrooms in every configured neighborhood."""
+        """Fetch rentals with 1 to ``criteria.max_bedrooms`` bedrooms in every configured neighborhood."""
         listings: list[FoundListing] = []
         for index, neighborhood in enumerate(criteria.neighborhoods):
             if index:
                 await asyncio.sleep(SECONDS_BETWEEN_REQUESTS)
-            listings.extend(await self._fetch_neighborhood(client, neighborhood, criteria))
+            listings.extend(await self._fetch_neighborhood(client, neighborhood, criteria.max_bedrooms))
         return listings
 
     async def _fetch_neighborhood(
         self,
         client: httpx.AsyncClient,
         neighborhood: str,
-        criteria: SearchCriteria,
+        max_bedrooms: int,
     ) -> list[FoundListing]:
         """Page through one neighborhood's results."""
         listings: list[FoundListing] = []
         for page in range(MAX_PAGES_PER_NEIGHBORHOOD):
             if page:
                 await asyncio.sleep(SECONDS_BETWEEN_REQUESTS)
-            search = await self._get_page(client, neighborhood, criteria, page * PAGE_SIZE)
+            search = await self._get_page(client, neighborhood, max_bedrooms, page * PAGE_SIZE)
             items = search["result"]["listings"]
             listings.extend(
-                listing
-                for item in items
-                if (listing := parse_item(item, self.name, self.site_url, criteria.business)) is not None
+                listing for item in items if (listing := parse_item(item, self.name, self.site_url)) is not None
             )
             if (page + 1) * PAGE_SIZE >= search.get("totalCount", 0) or not items:
                 break
@@ -78,17 +75,17 @@ class GlueSource:
         self,
         client: httpx.AsyncClient,
         neighborhood: str,
-        criteria: SearchCriteria,
+        max_bedrooms: int,
         offset: int,
     ) -> dict:
         """GET one page of results and return its ``search`` object."""
         params = {
-            "business": BUSINESS_TYPES[criteria.business],
+            "business": "RENTAL",
             "categoryPage": "RESULT",
             "addressCity": "Belo Horizonte",
             "addressState": "Minas Gerais",
             "addressNeighborhood": neighborhood,
-            "bedrooms": ",".join(str(count) for count in range(1, max(criteria.max_bedrooms, 1) + 1)),
+            "bedrooms": ",".join(str(count) for count in range(1, max(max_bedrooms, 1) + 1)),
             "size": PAGE_SIZE,
             "from": offset,
         }
@@ -104,38 +101,31 @@ class GlueSource:
             raise SourceError(f"{self.name}: {describe_error(error)} em {neighborhood}") from error
 
 
-def parse_item(item: dict, source: str, site_url: str, business: str = RENT) -> FoundListing | None:
-    """Convert one API result into a FoundListing, or None if it is not residential or lacks that price.
-
-    A unit offered both to rent and to buy carries one pricing entry per business.
-    """
+def parse_item(item: dict, source: str, site_url: str) -> FoundListing | None:
+    """Convert one API result into a FoundListing, or None if it is not a residential rental."""
     data = item["listing"]
     if "RESIDENTIAL" not in data.get("usageTypes", []):
         return None
-    business_type = BUSINESS_TYPES[business]
-    pricing = next((info for info in data.get("pricingInfos", []) if info.get("businessType") == business_type), None)
+    pricing = next((info for info in data.get("pricingInfos", []) if info.get("businessType") == "RENTAL"), None)
     if pricing is None:
         return None
     address = data.get("address") or {}
     link = item.get("link") or {}
-    price = int(pricing.get("price") or 0)
     return FoundListing(
         source=source,
         external_id=str(data["id"]),
         url=f"{site_url}{link.get('href', '')}",
-        title=link.get("name") or data.get("title") or "Imóvel",
+        title=link.get("name") or data.get("title") or "Imóvel para alugar",
         kind=_kind(data),
         bedrooms=_first(data.get("bedrooms")) or 0,
         area=_first(data.get("usableAreas")),
-        rent=0 if business == SALE else price,
+        rent=int(pricing.get("price") or 0),
         condo=int(pricing.get("monthlyCondoFee") or 0),
         iptu=round(int(pricing.get("yearlyIptu") or 0) / 12),
         neighborhood=address.get("neighborhood") or "",
         alt_neighborhood=(link.get("data") or {}).get("neighborhood") or "",
         address=" ".join(part for part in (address.get("street"), address.get("streetNumber")) if part),
         image_url=_image_url(item.get("medias") or []),
-        business=business,
-        sale_price=price if business == SALE else None,
     )
 
 

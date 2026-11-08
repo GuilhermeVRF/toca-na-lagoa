@@ -5,7 +5,6 @@ from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
 
-from app.db import load_settings
 from app.main import app
 from app.models import Listing
 
@@ -55,7 +54,7 @@ def valid_settings(**overrides) -> dict:
 
 
 def test_should_serve_the_vue_shell_for_page_routes(client):
-    for path in ("/", "/comprar", "/settings"):
+    for path in ("/", "/settings"):
         response = client.get(path)
         assert response.status_code == 200
         assert 'id="app"' in response.text
@@ -97,10 +96,6 @@ def test_should_save_and_clean_settings(client):
         ({"neighborhoods": [" "]}, "Informe pelo menos um bairro"),
         ({"check_times": ["25:00"]}, "Horários de verificação inválidos"),
         ({"max_bedrooms": 9}, "Máximo de quartos deve ficar entre 0 e 5"),
-        ({"sale_min_price": 500_000, "sale_max_price": 300_000}, "O preço mínimo de compra é maior que o máximo"),
-        ({"financing_down_payment_percent": 120}, "A entrada deve ficar entre 0 e 100% do preço"),
-        ({"financing_term_years": 40}, "O prazo deve ficar entre 1 e 35 anos"),
-        ({"financing_system": "sacre"}, "Sistema de amortização inválido: use SAC ou Price"),
     ],
 )
 def test_should_reject_invalid_settings_with_portuguese_message(client, overrides, message):
@@ -123,79 +118,3 @@ def test_should_report_status_and_favorites_summary(client, listing):
     status = client.get("/api/status").json()
     assert status["running"] is False
     assert status["last_check_at"] is None
-
-
-@pytest.fixture
-def sale_listing(session) -> Listing:
-    """One stored, active listing for sale in the same neighborhood as ``listing``."""
-    stored = Listing(
-        source="zap",
-        business="sale",
-        external_id="1",
-        url="https://example.com/sale/1",
-        title="Apto à venda",
-        kind="apartment",
-        bedrooms=2,
-        area=50,
-        rent=0,
-        sale_price=400_000,
-        condo=300,
-        iptu=50,
-        total=400_000,
-        neighborhood="Castelo",
-        first_seen=NOW,
-        last_seen=NOW,
-    )
-    session.add(stored)
-    session.commit()
-    session.refresh(stored)
-    return stored
-
-
-def test_should_list_each_business_on_its_own_page(client, listing, sale_listing):
-    rentals = client.get("/api/listings").json()
-    sales = client.get("/api/listings", params={"business": "sale"}).json()
-    assert [card["listing"]["business"] for card in rentals["cards"]] == ["rent"]
-    assert [card["listing"]["business"] for card in sales["cards"]] == ["sale"]
-    assert (rentals["neighborhoods"], sales["neighborhoods"]) == (["São Luiz"], ["Castelo"])
-    assert rentals["cards"][0]["financing"] is None
-
-
-def test_should_estimate_financing_with_saved_terms(client, sale_listing):
-    client.put(
-        "/api/settings",
-        json=valid_settings(
-            sale_enabled=True,
-            financing_down_payment_percent=20,
-            financing_rate=12,
-            financing_term_years=30,
-            financing_system="price",
-        ),
-    )
-    page = client.get("/api/listings", params={"business": "sale", "sort": "monthly"}).json()
-    assert page["search_enabled"] is True
-    assert page["financing"]["system_label"] == "Price"
-    financing = page["cards"][0]["financing"]
-    assert (financing["down_payment"], financing["first_installment"]) == (80_000, 3141)
-    assert financing["monthly_cost"] == 3141 + 350
-
-
-def test_should_flag_sale_page_while_sale_search_is_off(client, sale_listing):
-    assert client.get("/api/listings", params={"business": "sale"}).json()["search_enabled"] is False
-
-
-def test_should_forget_first_sale_fill_when_sales_are_turned_off(client, session):
-    settings = load_settings(session)
-    settings.sale_enabled = True
-    settings.sale_initial_sync_done = True
-    session.add(settings)
-    session.commit()
-    client.put("/api/settings", json=valid_settings(sale_enabled=False))
-    session.refresh(settings)
-    assert settings.sale_initial_sync_done is False
-
-
-def test_should_offer_sort_labels_per_business(client):
-    sort_labels = client.get("/api/options").json()["sort_labels"]
-    assert "monthly" in sort_labels["sale"]
-    assert "monthly" not in sort_labels["rent"]
