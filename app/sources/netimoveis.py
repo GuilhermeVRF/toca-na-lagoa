@@ -12,7 +12,7 @@ import httpx
 
 from app.config import RENT, SALE, SECONDS_BETWEEN_REQUESTS, USER_AGENT
 from app.normalize import parse_area, parse_brl
-from app.sources.base import FoundListing, SearchCriteria, SourceError
+from app.sources.base import FoundListing, SearchCriteria, SourceError, describe_error
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ async def _post_search(client: httpx.AsyncClient, page: int, business: str = REN
         response.raise_for_status()
         body = response.json()
     except (httpx.HTTPError, ValueError) as error:
-        raise SourceError(f"Netimóveis: {error.__class__.__name__}") from error
+        raise SourceError(f"Netimóveis: {describe_error(error)}") from error
     if body.get("erro"):
         raise SourceError(f"Netimóveis: {body.get('mensagem') or 'erro na busca'}")
     return body

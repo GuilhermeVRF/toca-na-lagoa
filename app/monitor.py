@@ -7,10 +7,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from html import escape
 
-import httpx
 from sqlmodel import Session, col, select
 
 from app import telegram
+from app.browser_http import browser_client
 from app.config import KIND_LABELS, RENT, REQUEST_TIMEOUT_SECONDS, SALE, SOURCE_LABELS, TIMEZONE
 from app.db import engine, load_settings
 from app.dedup import GroupCandidate, are_same_apartment, assign_groups
@@ -139,7 +139,7 @@ async def _fetch_all(
     the range), so they keep being followed instead of being retired as gone.
     """
     found_by_source: dict[str, list[FoundListing]] = {}
-    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS, follow_redirects=True) as client:
+    async with browser_client(REQUEST_TIMEOUT_SECONDS) as client:
         for source in sources:
             key = (source.name, criteria.business)
             status = session.get(SourceStatus, key) or SourceStatus(source=source.name, business=criteria.business)
