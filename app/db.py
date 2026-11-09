@@ -16,7 +16,6 @@ def init_db() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     SQLModel.metadata.create_all(engine)
     _add_missing_columns()
-    _delete_sale_rows()
     _rebuild_tables_with_changed_keys()
     _drop_removed_columns()
     with Session(engine) as session:
@@ -48,24 +47,6 @@ def _default_clause(connection: Connection, default) -> str:
         return ""
     value = literal(default.arg).compile(dialect=connection.dialect, compile_kwargs={"literal_binds": True})
     return f" DEFAULT {value}"
-
-
-def _delete_sale_rows() -> None:
-    """Delete the rows stored by the search of listings for sale, which was removed.
-
-    Rentals and sales were keyed by ``business``; once only rentals are left the
-    tables can go back to their old keys without two rows colliding.
-    """
-    with engine.begin() as connection:
-        if "business" in _stored_columns(connection, "listing"):
-            connection.execute(
-                text(
-                    "DELETE FROM pricehistory WHERE listing_id IN (SELECT id FROM listing WHERE business != 'rent')",
-                ),
-            )
-            connection.execute(text("DELETE FROM listing WHERE business != 'rent'"))
-        if "business" in _stored_columns(connection, "sourcestatus"):
-            connection.execute(text("DELETE FROM sourcestatus WHERE business != 'rent'"))
 
 
 def _stored_columns(connection: Connection, table_name: str) -> set[str]:
