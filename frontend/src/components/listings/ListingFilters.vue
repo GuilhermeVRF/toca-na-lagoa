@@ -49,7 +49,7 @@ const clear = () => { filters.value = clearedFilters(filters.value); };
 
 <template>
   <div class="card mb-6 overflow-hidden">
-    <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+    <div class="border-b border-tinta-100 px-4 py-3 dark:border-tinta-800">
       <SortBar v-model="filters" />
     </div>
 
@@ -58,10 +58,10 @@ const clear = () => { filters.value = clearedFilters(filters.value); };
       <button
         v-if="activeCount"
         type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10"
+        class="inline-flex shrink-0 items-center gap-1.5 self-start rounded px-3 py-1.5 text-xs font-semibold text-tinta-500 dark:text-tinta-400 transition hover:bg-barro-50 hover:text-barro-600 dark:hover:bg-barro-500/10"
         @click="clear"
       >
-        <span class="grid h-4 min-w-4 place-items-center rounded-full bg-brand-600 px-1 text-[10px] text-white">{{ activeCount }}</span>
+        <span class="grid h-4 min-w-4 place-items-center rounded-full bg-cobalto-600 px-1 text-[10px] text-white">{{ activeCount }}</span>
         Limpar
         <AppIcon name="close" class="h-3.5 w-3.5" stroke-width="2.4" />
       </button>
@@ -70,16 +70,16 @@ const clear = () => { filters.value = clearedFilters(filters.value); };
     <div class="flex items-center gap-2 px-4 py-3 sm:hidden">
       <button
         type="button"
-        class="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-slate-100 px-3.5 text-sm font-semibold text-slate-700 transition active:scale-95 dark:bg-slate-800 dark:text-slate-200"
+        class="inline-flex h-9 shrink-0 items-center gap-2 rounded bg-white ring-1 ring-tinta-200 dark:ring-tinta-700 px-3.5 text-sm font-semibold text-tinta-700 transition active:scale-95 dark:bg-tinta-900 dark:text-tinta-200"
         :aria-expanded="sheetOpen"
         @click="sheetOpen = true"
       >
         <AppIcon name="sliders" class="h-4 w-4" stroke-width="2" />
         Filtros
-        <span v-if="activeCount" class="grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[11px] text-white">{{ activeCount }}</span>
+        <span v-if="activeCount" class="grid h-5 min-w-5 place-items-center rounded-full bg-cobalto-600 px-1 text-[11px] text-white">{{ activeCount }}</span>
       </button>
       <ActiveFilterChips :items="activeItems" class="min-w-0 flex-1" @remove="remove" />
-      <span v-if="!activeCount" class="truncate text-xs text-slate-400">Bairro, tipo, site, favoritos…</span>
+      <span v-if="!activeCount" class="truncate text-xs text-tinta-400">Bairro, tipo, site, favoritos…</span>
     </div>
   </div>
 

@@ -75,26 +75,26 @@ const paste = (event) => addMany(event.clipboardData.getData('text').split(/[,;\
 <template>
   <div>
     <div class="mb-1 flex items-baseline justify-between gap-2">
-      <span class="text-xs font-semibold text-slate-500">Bairros <span class="font-normal">({{ names.length }})</span></span>
+      <span class="text-xs font-semibold text-tinta-500 dark:text-tinta-400">Bairros <span class="font-normal">({{ names.length }})</span></span>
       <span class="flex gap-3 text-xs font-semibold">
-        <button v-if="!isDefault" type="button" class="text-brand-600 hover:underline dark:text-brand-400" @click="restoreDefaults">Restaurar padrão</button>
-        <button v-if="names.length" type="button" class="text-slate-400 hover:text-rose-500" @click="clear">Limpar</button>
+        <button v-if="!isDefault" type="button" class="text-cobalto-600 hover:underline dark:text-cobalto-300" @click="restoreDefaults">Restaurar padrão</button>
+        <button v-if="names.length" type="button" class="text-tinta-400 hover:text-barro-500" @click="clear">Limpar</button>
       </span>
     </div>
     <div
-      class="flex min-h-[42px] cursor-text flex-wrap items-center gap-1.5 rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-slate-200 transition focus-within:ring-2 focus-within:ring-brand-500 dark:bg-slate-800 dark:ring-slate-700"
+      class="flex min-h-[42px] cursor-text flex-wrap items-center gap-1.5 rounded-md bg-white p-1.5 ring-1 ring-tinta-200 transition focus-within:ring-2 focus-within:ring-cobalto-600 dark:bg-tinta-800 dark:ring-tinta-700"
       @click="input.focus()"
     >
       <span
         v-for="(name, index) in names"
         :key="name"
-        class="inline-flex items-center gap-1 rounded-lg bg-brand-50 py-1 pl-2.5 pr-1 text-xs font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-400"
+        class="inline-flex items-center gap-1 rounded-md bg-cobalto-50 py-1 pl-2.5 pr-1 text-xs font-semibold text-cobalto-700 dark:bg-cobalto-300/15 dark:text-cobalto-300"
       >
         {{ name }}
         <button
           type="button"
           :title="`Remover ${name}`"
-          class="grid h-4 w-4 place-items-center rounded text-brand-700/60 hover:bg-brand-100 hover:text-rose-600 dark:text-brand-400/60 dark:hover:bg-brand-500/20"
+          class="grid h-4 w-4 place-items-center rounded text-cobalto-700/60 hover:bg-cobalto-100 hover:text-barro-600 dark:text-cobalto-300/60 dark:hover:bg-cobalto-500/20"
           @click.stop="remove(index)"
         >
           <AppIcon name="close" class="h-3 w-3" stroke-width="3" />
@@ -110,7 +110,7 @@ const paste = (event) => addMany(event.clipboardData.getData('text').split(/[,;\
           aria-label="Adicionar bairro"
           :aria-expanded="matches.length > 0"
           placeholder="Digite um bairro e tecle Enter…"
-          class="w-full border-0 bg-transparent px-1.5 py-1 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-0"
+          class="w-full border-0 bg-transparent px-1.5 py-1 text-sm placeholder:text-tinta-400 focus:outline-none focus:ring-0"
           @keydown="addOnComma"
           @keydown.enter.prevent="addHighlighted"
           @keydown.backspace="removeLast"
@@ -123,7 +123,7 @@ const paste = (event) => addMany(event.clipboardData.getData('text').split(/[,;\
         <ul
           v-if="matches.length"
           role="listbox"
-          class="absolute left-0 top-full z-10 mt-2 max-h-56 w-64 overflow-auto rounded-xl bg-white p-1 text-sm shadow-lg ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700"
+          class="absolute left-0 top-full z-10 mt-2 max-h-56 w-64 overflow-auto rounded-md bg-white p-1 text-sm shadow-lg ring-1 ring-tinta-200 dark:bg-tinta-800 dark:ring-tinta-700"
           @mousedown.prevent
         >
           <li
@@ -131,8 +131,8 @@ const paste = (event) => addMany(event.clipboardData.getData('text').split(/[,;\
             :key="match"
             role="option"
             :aria-selected="index === highlight"
-            class="cursor-pointer rounded-lg px-3 py-1.5"
-            :class="{ 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-400': index === highlight }"
+            class="cursor-pointer rounded-md px-3 py-1.5"
+            :class="{ 'bg-cobalto-50 text-cobalto-700 dark:bg-cobalto-300/15 dark:text-cobalto-300': index === highlight }"
             @click="add(match)"
             @mouseenter="highlight = index"
           >
@@ -141,6 +141,6 @@ const paste = (event) => addMany(event.clipboardData.getData('text').split(/[,;\
         </ul>
       </div>
     </div>
-    <p class="mt-1 text-xs text-slate-400">Enter ou vírgula adiciona · Backspace remove o último · dá para colar uma lista.</p>
+    <p class="mt-1 text-xs text-tinta-400">Enter ou vírgula adiciona · Backspace remove o último · dá para colar uma lista.</p>
   </div>
 </template>

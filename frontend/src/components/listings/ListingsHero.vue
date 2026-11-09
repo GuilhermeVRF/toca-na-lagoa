@@ -20,9 +20,9 @@ const lastCheck = computed(() =>
 <template>
   <div class="flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
     <div>
-      <p class="text-sm font-medium uppercase tracking-wider text-white/60">Apartamentos para alugar</p>
-      <h1 class="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">{{ count }} opções na Pampulha</h1>
-      <p class="mt-2 text-sm text-white/70">
+      <p class="overline text-white/65">Apartamentos para alugar</p>
+      <h1 class="display mt-1 text-4xl leading-none sm:text-5xl">{{ count }} opções na Pampulha</h1>
+      <p class="mt-3 text-sm text-white/70">
         <template v-if="lastCheck">{{ lastCheck }}</template>
         <template v-else-if="status">Nenhuma verificação ainda. Clique em <b>Verificar agora</b> para buscar os anúncios.</template>
       </p>
@@ -30,7 +30,7 @@ const lastCheck = computed(() =>
     <button
       type="button"
       :disabled="busy"
-      class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 sm:w-auto sm:py-2.5 text-sm font-semibold text-brand-700 shadow-lg transition hover:bg-brand-50 disabled:opacity-70"
+      class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-semibold text-cobalto-800 transition hover:bg-ocre-50 disabled:opacity-70 sm:w-auto sm:py-2.5 dark:bg-tinta-100"
       @click="monitor.checkNow()"
     >
       <AppIcon name="refresh" class="h-4 w-4" :class="{ 'animate-spin': busy }" stroke-width="2.2" />
@@ -42,10 +42,10 @@ const lastCheck = computed(() =>
       v-for="source in status.sources"
       :key="source.source"
       :title="source.error || null"
-      class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1"
-      :class="source.ok ? 'bg-white/10 text-white/85 ring-white/20' : 'bg-rose-500/25 text-white ring-rose-300/40'"
+      class="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ring-1"
+      :class="source.ok ? 'bg-white/10 text-white/85 ring-white/20' : 'bg-barro-500/40 text-white ring-barro-300/50'"
     >
-      <span class="h-1.5 w-1.5 rounded-full" :class="source.ok ? 'bg-emerald-300' : 'bg-rose-300'" />
+      <span class="h-1.5 w-1.5 rotate-45" :class="source.ok ? 'bg-ocre-300' : 'bg-barro-200'" />
       {{ source.label }}: {{ source.ok ? source.found : 'erro' }}
     </span>
   </div>

@@ -31,7 +31,7 @@ const update = (changes) => { filters.value = { ...filters.value, ...changes }; 
       <AppIcon name="chevronDown" class="pointer-events-none -ml-5 h-3.5 w-3.5 shrink-0 opacity-60" stroke-width="2.4" />
     </label>
 
-    <span class="mx-1 h-6 w-px bg-slate-200 dark:bg-slate-700" />
+    <span class="mx-1 h-6 w-px bg-tinta-200 dark:bg-tinta-700" />
 
     <button
       v-for="toggle in TOGGLE_FILTERS"
@@ -51,7 +51,7 @@ const update = (changes) => { filters.value = { ...filters.value, ...changes }; 
     <label v-for="select in selects" :key="select.key" class="block">
       <span class="label">{{ select.label }}</span>
       <span class="relative block">
-        <AppIcon :name="select.icon" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <AppIcon :name="select.icon" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tinta-400" />
         <select
           :value="filters[select.key]"
           class="field cursor-pointer appearance-none !pl-9 !pr-9"
@@ -60,7 +60,7 @@ const update = (changes) => { filters.value = { ...filters.value, ...changes }; 
           <option value="">Todos</option>
           <option v-for="[value, label] in select.choices" :key="value" :value="value">{{ label }}</option>
         </select>
-        <AppIcon name="chevronDown" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" stroke-width="2.4" />
+        <AppIcon name="chevronDown" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tinta-400" stroke-width="2.4" />
       </span>
     </label>
 
@@ -72,10 +72,10 @@ const update = (changes) => { filters.value = { ...filters.value, ...changes }; 
           :key="toggle.key"
           type="button"
           :aria-pressed="filters[toggle.key]"
-          class="flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold ring-1 transition"
+          class="flex h-11 items-center gap-2 rounded-md px-3 text-sm font-semibold ring-1 transition"
           :class="filters[toggle.key]
-            ? 'bg-brand-50 text-brand-700 ring-brand-300 dark:bg-brand-500/15 dark:text-brand-400 dark:ring-brand-500/40'
-            : 'bg-white text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'"
+            ? 'bg-cobalto-50 text-cobalto-700 ring-cobalto-300 dark:bg-cobalto-300/15 dark:text-cobalto-300 dark:ring-cobalto-500/40'
+            : 'bg-white text-tinta-600 ring-tinta-200 dark:bg-tinta-800 dark:text-tinta-300 dark:ring-tinta-700'"
           @click="update({ [toggle.key]: !filters[toggle.key] })"
         >
           <AppIcon :name="toggle.icon" class="h-4 w-4 shrink-0" stroke-width="2" />

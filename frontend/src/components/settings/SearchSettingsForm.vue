@@ -42,8 +42,8 @@ async function save() {
 
 <template>
   <section class="card p-6">
-    <h2 class="text-base font-bold">Busca e alertas</h2>
-    <p class="mb-5 text-sm text-slate-500">Critérios aplicados a todos os sites.</p>
+    <h2 class="display text-xl">Busca e alertas</h2>
+    <p class="mb-5 text-sm text-tinta-500 dark:text-tinta-400">Critérios aplicados a todos os sites.</p>
     <form class="space-y-5" @submit.prevent="save">
       <ToggleSwitch v-model="draft.enabled" title="Monitor ligado" description="Desligue para pausar todas as verificações automáticas." />
 
@@ -66,7 +66,7 @@ async function save() {
 
       <CheckTimesEditor v-model="draft.check_times" />
 
-      <p class="rounded-xl bg-brand-50 px-4 py-3 text-xs leading-relaxed text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">
+      <p class="rounded-md bg-cobalto-50 px-4 py-3 text-xs leading-relaxed text-cobalto-700 dark:bg-cobalto-300/10 dark:text-cobalto-300">
         A busca guarda só os anúncios que batem com bairros, quartos, área e faixa de preço (valor total = aluguel + condomínio + IPTU).
         A primeira verificação apenas preenche a lista; a partir da segunda, você recebe os apartamentos <b>novos</b> e as <b>novidades dos favoritos</b>.
       </p>
