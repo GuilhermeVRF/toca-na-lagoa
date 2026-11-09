@@ -2,6 +2,7 @@
 
 import re
 import unicodedata
+from functools import cache
 
 from app.sources.base import FoundListing, SearchCriteria
 
@@ -20,7 +21,7 @@ def matches_criteria(listing: FoundListing, criteria: SearchCriteria) -> bool:
         return False
     if criteria.max_total is not None and listing.total > criteria.max_total:
         return False
-    wanted = {normalize_text(name) for name in criteria.neighborhoods}
+    wanted = _neighborhood_keys(tuple(criteria.neighborhoods))
     return normalize_text(listing.neighborhood) in wanted or normalize_text(listing.alt_neighborhood) in wanted
 
 
@@ -29,13 +30,20 @@ def canonical_neighborhood(listing: FoundListing, neighborhoods: list[str]) -> s
 
     Falls back to the listing's own name when neither of its names is configured.
     """
-    by_key = {normalize_text(name): name for name in neighborhoods}
+    by_key = _neighborhood_keys(tuple(neighborhoods))
     for candidate in (listing.neighborhood, listing.alt_neighborhood):
-        if normalize_text(candidate) in by_key:
-            return by_key[normalize_text(candidate)]
+        if (name := by_key.get(normalize_text(candidate))) is not None:
+            return name
     return listing.neighborhood
 
 
+@cache
+def _neighborhood_keys(neighborhoods: tuple[str, ...]) -> dict[str, str]:
+    """Configured neighborhoods by their normalized name; computed once per configuration."""
+    return {normalize_text(name): name for name in neighborhoods}
+
+
+@cache
 def normalize_text(value: str) -> str:
     """Lowercase, strip accents and collapse spaces, so "São Luíz" equals "sao luiz"."""
     decomposed = unicodedata.normalize("NFKD", value)
