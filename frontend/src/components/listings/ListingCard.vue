@@ -33,35 +33,36 @@ const historyNewestFirst = computed(() => [...props.card.history].reverse());
 
 <template>
   <article
-    class="group relative flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 transition hover:shadow-md dark:bg-slate-900"
+    class="group relative flex h-full flex-col overflow-hidden rounded-[18px] rounded-bl-[4px] bg-white ring-[1.5px] transition dark:bg-tinta-900"
     :class="[
-      listing.favorite ? 'ring-amber-300 dark:ring-amber-500/50' : 'ring-slate-200 dark:ring-slate-800',
+      listing.favorite ? 'ring-ocre-500 dark:ring-ocre-400' : 'ring-tinta-200 hover:ring-cobalto-400 dark:ring-tinta-700 dark:hover:ring-cobalto-400',
       { 'opacity-60': listing.hidden || !listing.active },
     ]"
   >
-    <a :href="listing.url" target="_blank" rel="noopener" class="relative block aspect-[3/2] shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800">
-      <img v-if="listing.image_url" :src="listing.image_url" alt="" loading="lazy" referrerpolicy="no-referrer" class="absolute inset-0 h-full w-full object-cover">
+    <a :href="listing.url" target="_blank" rel="noopener" class="relative block aspect-[3/2] shrink-0 overflow-hidden bg-cobalto-100 dark:bg-tinta-800">
+      <div v-if="!listing.image_url" class="azulejo absolute inset-0 text-cobalto-700/20 dark:text-cobalto-300/15" />
+      <img v-if="listing.image_url" :src="listing.image_url" alt="" loading="lazy" referrerpolicy="no-referrer" class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]">
       <div class="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
-        <span v-if="card.is_new" class="rounded-full bg-brand-600 px-2 py-0.5 text-[11px] font-bold text-white shadow">NOVO</span>
-        <span v-if="priceDropped" class="rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-white shadow">BAIXOU</span>
-        <span v-if="!listing.active" class="rounded-full bg-slate-700 px-2 py-0.5 text-[11px] font-bold text-white shadow">SAIU DO AR · {{ formatDayMonth(listing.last_seen) }}</span>
+        <span v-if="card.is_new" class="overline rounded-sm bg-cobalto-700 px-2 py-0.5 text-white">Novo</span>
+        <span v-if="priceDropped" class="overline rounded-sm bg-ocre-400 px-2 py-0.5 text-ocre-900">Baixou</span>
+        <span v-if="!listing.active" class="overline rounded-sm bg-tinta-800 px-2 py-0.5 text-white">Saiu do ar · {{ formatDayMonth(listing.last_seen) }}</span>
       </div>
-      <span class="absolute bottom-2.5 right-2.5 rounded-full bg-slate-900/75 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">{{ sourceLabel(listing.source) }}</span>
+      <span class="absolute bottom-0 right-0 rounded-tl-md bg-white px-2.5 py-1 text-[11px] font-semibold text-cobalto-800 dark:bg-tinta-900 dark:text-cobalto-200">{{ sourceLabel(listing.source) }}</span>
     </a>
 
     <div class="flex flex-1 flex-col p-4">
       <div class="flex items-start justify-between gap-2">
         <div>
-          <p class="text-2xl font-extrabold tracking-tight">{{ formatBrl(listing.total) }}<span class="text-sm font-medium text-slate-400">/mês</span></p>
-          <p v-if="priceChanged" class="text-xs text-slate-400">antes <s>{{ formatBrl(card.previous_total) }}</s></p>
+          <p class="display text-[1.7rem] leading-none text-cobalto-700 dark:text-cobalto-200">{{ formatBrl(listing.total) }}<span class="ml-0.5 font-sans text-sm font-medium tracking-normal text-tinta-500 dark:text-tinta-400">/mês</span></p>
+          <p v-if="priceChanged" class="mt-1 text-xs text-tinta-500 dark:text-tinta-400">antes <s>{{ formatBrl(card.previous_total) }}</s></p>
         </div>
         <div class="flex gap-1">
           <button
             type="button"
             :aria-pressed="listing.favorite"
             :title="listing.favorite ? 'Remover dos favoritos' : 'Favoritar e acompanhar'"
-            class="rounded-lg p-1.5 transition hover:bg-slate-100 dark:hover:bg-slate-800"
-            :class="listing.favorite ? 'text-amber-500' : 'text-slate-400'"
+            class="rounded-md p-1.5 transition hover:bg-ocre-50 dark:hover:bg-tinta-800"
+            :class="listing.favorite ? 'text-ocre-500 dark:text-ocre-400' : 'text-tinta-400 hover:text-ocre-500'"
             @click="$emit('toggle-favorite', card)"
           >
             <AppIcon name="star" :filled="listing.favorite" class="h-5 w-5" />
@@ -70,7 +71,7 @@ const historyNewestFirst = computed(() => [...props.card.history].reverse());
             type="button"
             :aria-pressed="listing.hidden"
             :title="listing.hidden ? 'Mostrar de novo' : 'Ocultar (não alerta mais)'"
-            class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-rose-500 dark:hover:bg-slate-800"
+            class="rounded-md p-1.5 text-tinta-400 transition hover:bg-barro-50 hover:text-barro-500 dark:hover:bg-tinta-800"
             @click="$emit('toggle-hidden', card)"
           >
             <AppIcon :name="listing.hidden ? 'eye' : 'eyeOff'" class="h-5 w-5" />
@@ -78,23 +79,23 @@ const historyNewestFirst = computed(() => [...props.card.history].reverse());
         </div>
       </div>
 
-      <p class="mt-1 text-xs text-slate-500">aluguel {{ formatBrl(listing.rent) }} · {{ charges }}</p>
+      <p class="mt-2 text-xs text-tinta-500 dark:text-tinta-400">aluguel {{ formatBrl(listing.rent) }} · {{ charges }}</p>
 
-      <p class="mt-3 truncate font-semibold leading-snug" :title="`${kindLabel(listing.kind)} · ${listing.neighborhood}`">{{ kindLabel(listing.kind) }} · {{ listing.neighborhood }}</p>
-      <p class="h-5 truncate text-sm text-slate-500" :title="listing.address">{{ listing.address }}</p>
+      <p class="mt-4 truncate border-t border-tinta-100 pt-3 font-semibold leading-snug dark:border-tinta-800" :title="`${kindLabel(listing.kind)} · ${listing.neighborhood}`">{{ kindLabel(listing.kind) }} · {{ listing.neighborhood }}</p>
+      <p class="h-5 truncate text-sm text-tinta-500 dark:text-tinta-400" :title="listing.address">{{ listing.address }}</p>
 
       <div class="mt-3 flex flex-wrap gap-1.5 text-xs">
-        <span v-if="listing.area" class="rounded-md bg-slate-100 px-2 py-1 dark:bg-slate-800">{{ listing.area }} m²</span>
-        <span v-if="card.price_per_m2" class="rounded-md bg-slate-100 px-2 py-1 dark:bg-slate-800">R$ {{ Math.round(card.price_per_m2) }}/m²</span>
-        <span class="rounded-md bg-slate-100 px-2 py-1 dark:bg-slate-800">{{ bedrooms }}</span>
-        <span v-if="listing.furnished" class="rounded-md bg-brand-50 px-2 py-1 font-medium text-brand-700 dark:bg-brand-500/15 dark:text-brand-400">mobiliado</span>
+        <span v-if="listing.area" class="rounded-sm bg-tinta-50 px-2 py-1 text-tinta-700 ring-1 ring-tinta-100 dark:bg-tinta-800 dark:text-tinta-200 dark:ring-tinta-700">{{ listing.area }} m²</span>
+        <span v-if="card.price_per_m2" class="rounded-sm bg-tinta-50 px-2 py-1 text-tinta-700 ring-1 ring-tinta-100 dark:bg-tinta-800 dark:text-tinta-200 dark:ring-tinta-700">R$ {{ Math.round(card.price_per_m2) }}/m²</span>
+        <span class="rounded-sm bg-tinta-50 px-2 py-1 text-tinta-700 ring-1 ring-tinta-100 dark:bg-tinta-800 dark:text-tinta-200 dark:ring-tinta-700">{{ bedrooms }}</span>
+        <span v-if="listing.furnished" class="rounded-sm bg-cobalto-50 px-2 py-1 font-medium text-cobalto-700 ring-1 ring-cobalto-100 dark:bg-cobalto-300/15 dark:text-cobalto-200 dark:ring-cobalto-300/20">mobiliado</span>
       </div>
 
-      <div class="mt-auto pt-4 text-xs text-slate-500">
+      <div class="mt-auto pt-4 text-xs text-tinta-500 dark:text-tinta-400">
         <p class="mb-1 h-4 truncate" :title="copiesText">
           <template v-if="card.copies.length">Também anunciado em:</template>
           <template v-for="(copy, index) in card.copies" :key="copy.url">
-            <a :href="copy.url" target="_blank" rel="noopener" class="font-medium text-brand-600 hover:underline dark:text-brand-400">{{ sourceLabel(copy.source) }} ({{ formatBrl(copy.total) }})</a>{{ index < card.copies.length - 1 ? ', ' : '' }}
+            <a :href="copy.url" target="_blank" rel="noopener" class="font-medium text-cobalto-700 underline-offset-2 hover:underline dark:text-cobalto-300">{{ sourceLabel(copy.source) }} ({{ formatBrl(copy.total) }})</a>{{ index < card.copies.length - 1 ? ', ' : '' }}
           </template>
         </p>
         <div class="flex items-center justify-between gap-2">
@@ -103,7 +104,7 @@ const historyNewestFirst = computed(() => [...props.card.history].reverse());
             v-if="card.history.length > 1"
             type="button"
             :aria-expanded="showHistory"
-            class="font-medium text-brand-600 hover:underline dark:text-brand-400"
+            class="font-medium text-cobalto-700 underline-offset-2 hover:underline dark:text-cobalto-300"
             @click="showHistory = !showHistory"
           >
             histórico de preço
@@ -111,9 +112,9 @@ const historyNewestFirst = computed(() => [...props.card.history].reverse());
         </div>
         <div
           v-if="showHistory"
-          class="absolute inset-x-3 bottom-11 max-h-48 overflow-auto rounded-xl bg-white p-3 shadow-lg ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700"
+          class="absolute inset-x-3 bottom-11 max-h-48 overflow-auto rounded-md bg-white p-3 shadow-lg shadow-cobalto-900/10 ring-1 ring-tinta-200 dark:bg-tinta-800 dark:ring-tinta-700"
         >
-          <p class="mb-1 font-semibold text-slate-600 dark:text-slate-300">Histórico de preço</p>
+          <p class="mb-1 font-semibold text-tinta-600 dark:text-tinta-300">Histórico de preço</p>
           <ul class="space-y-0.5">
             <li v-for="point in historyNewestFirst" :key="point.observed_at" class="flex justify-between">
               <span>{{ formatDate(point.observed_at) }}</span><span class="font-medium">{{ formatBrl(point.total) }}</span>

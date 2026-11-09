@@ -18,15 +18,15 @@ onBeforeUnmount(monitor.onCheckFinished(load));
 </script>
 
 <template>
-  <div class="rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-amber-200/70 dark:bg-amber-500/10 dark:ring-amber-500/20">
+  <div class="rounded-md bg-ocre-50 px-4 py-3 ring-1 ring-ocre-200/70 dark:bg-ocre-500/10 dark:ring-ocre-500/20">
     <div class="flex items-center justify-between gap-3">
-      <span class="flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-300">
+      <span class="flex items-center gap-2 text-sm font-semibold text-ocre-800 dark:text-ocre-300">
         <AppIcon name="star" filled class="h-4 w-4" />
         Acompanhamento de favoritos
       </span>
-      <RouterLink to="/?favorites=1" class="text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400">Ver favoritos →</RouterLink>
+      <RouterLink to="/?favorites=1" class="text-xs font-semibold text-ocre-700 hover:underline dark:text-ocre-400">Ver favoritos →</RouterLink>
     </div>
-    <p class="mt-1 text-xs leading-relaxed text-amber-800/80 dark:text-amber-300/80">
+    <p class="mt-1 text-xs leading-relaxed text-ocre-800/80 dark:text-ocre-300/80">
       <template v-if="summary && (summary.available || summary.gone)">
         {{ summary.available }} disponível(is)<template v-if="summary.gone"> · <b>{{ summary.gone }} saiu(saíram) do ar</b></template>.
       </template>

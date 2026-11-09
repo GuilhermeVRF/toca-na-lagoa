@@ -45,8 +45,12 @@ async function toggle(card, flag) {
 
     <ListingFilters v-model="filters" :neighborhoods="neighborhoods" :result-count="cards.length" />
 
-    <div v-if="!loaded" class="card p-10 text-center text-slate-500">Carregando…</div>
-    <div v-else-if="!cards.length" class="card p-10 text-center text-slate-500">Nenhum apartamento com esses filtros.</div>
+    <div v-if="!loaded" class="card p-10 text-center text-tinta-500 dark:text-tinta-400">Carregando…</div>
+    <div v-else-if="!cards.length" class="card relative overflow-hidden p-10 text-center text-tinta-500 dark:text-tinta-400">
+      <div class="azulejo pointer-events-none absolute inset-0 text-cobalto-700/[0.06] dark:text-cobalto-300/[0.06]" />
+      <p class="display relative text-2xl text-cobalto-700 dark:text-cobalto-200">Nada por aqui</p>
+      <p class="relative mt-1">Nenhum apartamento com esses filtros.</p>
+    </div>
 
     <div class="grid auto-rows-fr gap-5 transition-opacity sm:grid-cols-2 lg:grid-cols-3" :class="{ 'opacity-60': loading && loaded }">
       <ListingCard

@@ -28,7 +28,7 @@ onBeforeUnmount(() => {
 <template>
   <Teleport to="body">
     <Transition name="sheet-backdrop">
-      <div v-if="open" class="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm" @click="close" />
+      <div v-if="open" class="fixed inset-0 z-40 bg-tinta-950/50 backdrop-blur-sm" @click="close" />
     </Transition>
     <Transition name="sheet">
       <section
@@ -36,19 +36,19 @@ onBeforeUnmount(() => {
         role="dialog"
         aria-modal="true"
         :aria-label="title"
-        class="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-3xl bg-white shadow-2xl dark:bg-slate-900"
+        class="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-[18px] bg-white shadow-2xl dark:bg-tinta-900"
       >
-        <div class="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-slate-200 dark:bg-slate-700" />
+        <div class="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-tinta-200 dark:bg-tinta-700" />
         <header class="flex shrink-0 items-center justify-between px-5 pb-2 pt-3">
-          <h2 class="text-base font-bold">{{ title }}</h2>
-          <button type="button" title="Fechar" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" @click="close">
+          <h2 class="display text-xl">{{ title }}</h2>
+          <button type="button" title="Fechar" class="rounded-md p-1.5 text-tinta-400 hover:bg-tinta-100 dark:hover:bg-tinta-800" @click="close">
             <AppIcon name="close" class="h-5 w-5" stroke-width="2.2" />
           </button>
         </header>
         <div class="flex-1 overflow-y-auto px-5 pb-4">
           <slot />
         </div>
-        <footer v-if="$slots.footer" class="shrink-0 border-t border-slate-100 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 dark:border-slate-800">
+        <footer v-if="$slots.footer" class="shrink-0 border-t border-tinta-100 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 dark:border-tinta-800">
           <slot name="footer" />
         </footer>
       </section>

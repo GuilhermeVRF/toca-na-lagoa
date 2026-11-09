@@ -13,12 +13,12 @@ const max = defineModel('max', { type: String, required: true });
     <legend class="label">{{ legend }}</legend>
     <div class="flex items-center gap-2">
       <label class="relative flex-1">
-        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">de</span>
+        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-tinta-400">de</span>
         <input v-model="min" inputmode="numeric" placeholder="ex.: 1.200" aria-label="Valor total mínimo" class="field !pl-9">
       </label>
-      <span class="text-slate-300 dark:text-slate-600">—</span>
+      <span class="text-tinta-300 dark:text-tinta-600">—</span>
       <label class="relative flex-1">
-        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">até</span>
+        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-tinta-400">até</span>
         <input v-model="max" inputmode="numeric" placeholder="ex.: 2.500" aria-label="Valor total máximo" class="field !pl-11">
       </label>
     </div>
