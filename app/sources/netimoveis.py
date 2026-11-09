@@ -10,7 +10,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import httpx
 
-from app.config import SECONDS_BETWEEN_REQUESTS, USER_AGENT
+from app.config import SECONDS_BETWEEN_REQUESTS
 from app.normalize import parse_area, parse_brl
 from app.sources.base import FoundListing, SearchCriteria, SourceError, describe_error
 
@@ -77,7 +77,6 @@ async def _post_search(client: httpx.AsyncClient, page: int) -> dict:
             SEARCH_URL,
             json=payload,
             headers={
-                "User-Agent": USER_AGENT,
                 "Origin": SITE_URL,
                 "Referer": f"{SITE_URL}/locacao/minas-gerais/belo-horizonte/pampulha/apartamento",
                 "X-Listagem-Fetch-Source": "csr",
@@ -101,7 +100,7 @@ def parse_item(item: dict) -> FoundListing:
         external_id=str(item["imovel_id"]),
         url=f"{SITE_URL}{link}",
         title=item.get("titulo") or "Imóvel para alugar",
-        kind=KINDS.get(_listing_type(link), None),
+        kind=KINDS.get(_listing_type(link)),
         bedrooms=int(item.get("quartos") or 0),
         area=parse_area(item.get("areaRealPrivativa")),
         rent=parse_brl(item.get("valorImovel")),

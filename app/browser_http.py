@@ -11,7 +11,7 @@ from curl_cffi import CurlError
 from curl_cffi.requests import AsyncSession
 
 IMPERSONATE = "chrome"
-# The impersonated browser sends its own User-Agent; a different one would contradict its fingerprint.
+# The impersonated browser sends its own User-Agent and connection headers; others would contradict its fingerprint.
 DROPPED_HEADERS = {"user-agent", "host", "content-length", "accept-encoding", "connection"}
 
 
@@ -37,7 +37,11 @@ class BrowserTransport(httpx.AsyncBaseTransport):
             raise httpx.TransportError(str(error), request=request) from error
         return httpx.Response(
             response.status_code,
-            headers=[(name, value) for name, value in response.headers.multi_items() if name.lower() not in {"content-encoding", "content-length"}],
+            headers=[
+                (name, value)
+                for name, value in response.headers.multi_items()
+                if name.lower() not in {"content-encoding", "content-length"}
+            ],
             content=response.content,
             request=request,
         )
