@@ -34,4 +34,3 @@ def apply_schedule(settings: Settings) -> None:
             coalesce=True,
         )
     logger.info("Checks scheduled at %s", ", ".join(settings.check_time_list))
-
