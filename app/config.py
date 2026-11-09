@@ -12,7 +12,6 @@ DATABASE_URL = f"sqlite:///{DATA_DIR / 'apto-pampulha.db'}"
 TIMEZONE = ZoneInfo(os.environ.get("TZ", "America/Sao_Paulo"))
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
 
-USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
 REQUEST_TIMEOUT_SECONDS = 30.0
 SECONDS_BETWEEN_REQUESTS = 1.5
 

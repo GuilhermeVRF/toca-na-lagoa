@@ -147,17 +147,20 @@ async def _fetch_all(
                 session.add(status)
                 continue
             favorite_ids = _favorite_ids(session, source.name)
-            matching = _unique(listing for listing in fetched if matches_criteria(listing, criteria))
-            kept_favorites = _unique(
-                listing
-                for listing in fetched
-                if listing.external_id in favorite_ids and not matches_criteria(listing, criteria)
-            )
-            for listing in matching + kept_favorites:
+            matching: list[FoundListing] = []
+            kept_favorites: list[FoundListing] = []
+            for listing in fetched:
+                if matches_criteria(listing, criteria):
+                    matching.append(listing)
+                elif listing.external_id in favorite_ids:
+                    kept_favorites.append(listing)
+            kept = _unique(matching + kept_favorites)
+            for listing in kept:
                 listing.neighborhood = canonical_neighborhood(listing, criteria.neighborhoods)
-            found_by_source[source.name] = matching + kept_favorites
-            result.found += len(matching)
-            status.ok, status.error, status.found = True, "", len(matching)
+            found_by_source[source.name] = kept
+            found = len(_unique(matching))
+            result.found += found
+            status.ok, status.error, status.found = True, "", found
             session.add(status)
     return found_by_source
 
@@ -184,7 +187,7 @@ def _store_listings(
     Returns:
         Ids of listings seen for the first time.
     """
-    new_ids: list[int] = []
+    new_listings: list[Listing] = []
     for source_name, found in found_by_source.items():
         stored = {
             listing.external_id: listing
@@ -193,29 +196,31 @@ def _store_listings(
         for item in found:
             existing = stored.pop(item.external_id, None)
             if existing is None:
-                new_ids.append(_insert(session, item, now))
+                new_listings.append(_new_listing(item, now))
             else:
                 _update(session, existing, item, now)
         for missing in stored.values():
             missing.active = False
             session.add(missing)
+    session.add_all(new_listings)
+    # A single flush assigns the ids of every new listing, needed for their first price point.
     session.flush()
-    return new_ids
+    session.add_all(
+        PriceHistory(listing_id=listing.id, observed_at=now, total=listing.total) for listing in new_listings
+    )
+    session.flush()
+    return [listing.id for listing in new_listings]
 
 
-def _insert(session: Session, item: FoundListing, now: datetime) -> int:
-    """Store a listing seen for the first time, with its first price point."""
-    listing = Listing(
+def _new_listing(item: FoundListing, now: datetime) -> Listing:
+    """A listing seen for the first time."""
+    return Listing(
         **_listing_fields(item),
         source=item.source,
         external_id=item.external_id,
         first_seen=now,
         last_seen=now,
     )
-    session.add(listing)
-    session.flush()
-    session.add(PriceHistory(listing_id=listing.id, observed_at=now, total=listing.total))
-    return listing.id
 
 
 def _update(session: Session, listing: Listing, item: FoundListing, now: datetime) -> None:

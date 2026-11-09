@@ -10,7 +10,7 @@ import logging
 
 import httpx
 
-from app.config import SECONDS_BETWEEN_REQUESTS, USER_AGENT
+from app.config import SECONDS_BETWEEN_REQUESTS
 from app.sources.base import FoundListing, SearchCriteria, SourceError, describe_error
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class GlueSource:
             response = await client.get(
                 API_URL,
                 params=params,
-                headers={"User-Agent": USER_AGENT, "x-domain": self.domain, "Origin": self.site_url},
+                headers={"x-domain": self.domain, "Origin": self.site_url},
             )
             response.raise_for_status()
             return response.json()["search"]

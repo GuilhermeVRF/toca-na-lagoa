@@ -6,8 +6,8 @@ from sqlmodel import Session, SQLModel, select
 from app.db import engine, init_db
 from app.models import Listing, PriceHistory, Settings, SourceStatus
 
-# Schema left by the version that also searched listings for sale.
-SALE_SCHEMA = [
+# An older schema: extra columns, and keys that also included a ``business`` column.
+LEGACY_SCHEMA = [
     """CREATE TABLE settings (
         id INTEGER NOT NULL PRIMARY KEY, enabled BOOLEAN NOT NULL, check_times VARCHAR NOT NULL,
         neighborhoods VARCHAR NOT NULL, max_bedrooms INTEGER NOT NULL, max_area INTEGER, min_total INTEGER,
@@ -39,21 +39,16 @@ SALE_SCHEMA = [
     """INSERT INTO listing VALUES (7, 'zap', 'rent', '42', 'https://example.com/42', 'Apto', 'apartment', 1, 40,
         1500, NULL, 0, 0, 1500, 'São Luiz', '', '', NULL, '2026-10-01 08:00:00', '2026-10-01 08:00:00', 1, 1, 0,
         NULL, 1, 1500, 1)""",
-    """INSERT INTO listing VALUES (8, 'zap', 'sale', '42', 'https://example.com/42', 'Apto', 'apartment', 1, 40,
-        0, 300000, 0, 0, 300000, 'São Luiz', '', '', NULL, '2026-10-01 08:00:00', '2026-10-01 08:00:00', 1, 1, 0,
-        NULL, 1, 300000, 1)""",
     "INSERT INTO pricehistory VALUES (1, 7, '2026-10-01 08:00:00', 1500)",
-    "INSERT INTO pricehistory VALUES (2, 8, '2026-10-01 08:00:00', 300000)",
     "INSERT INTO sourcestatus VALUES ('zap', 'rent', '2026-10-01 08:00:00', 1, 1, '')",
-    "INSERT INTO sourcestatus VALUES ('zap', 'sale', '2026-10-01 08:00:00', 1, 1, '')",
 ]
 
 
-def test_should_drop_sale_data_and_keep_rentals(session):
+def test_should_rebuild_changed_keys_and_drop_removed_columns(session):
     session.close()
     SQLModel.metadata.drop_all(engine)
     with engine.begin() as connection:
-        for statement in SALE_SCHEMA:
+        for statement in LEGACY_SCHEMA:
             connection.execute(text(statement))
 
     init_db()

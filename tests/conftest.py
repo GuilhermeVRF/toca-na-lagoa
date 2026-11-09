@@ -10,10 +10,10 @@ FRONTEND_DIST_FOR_TESTS = Path(tempfile.mkdtemp(prefix="apto-pampulha-frontend-"
 (FRONTEND_DIST_FOR_TESTS / "index.html").write_text('<div id="app"></div>')
 os.environ.setdefault("FRONTEND_DIST", str(FRONTEND_DIST_FOR_TESTS))
 
-import pytest  # noqa: E402
-from sqlmodel import Session, SQLModel  # noqa: E402
+import pytest
+from sqlmodel import Session, SQLModel
 
-from app.db import engine, init_db  # noqa: E402
+from app.db import engine, init_db
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 

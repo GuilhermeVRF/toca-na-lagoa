@@ -51,11 +51,19 @@ def assign_groups(candidates: list[GroupCandidate]) -> dict[int, int | None]:
 
 
 def _matching_pairs(candidates: list[GroupCandidate]) -> list[tuple[GroupCandidate, GroupCandidate]]:
-    """Every pair that looks like the same apartment, closest prices and areas first."""
+    """Every pair that looks like the same apartment, closest prices and areas first.
+
+    Only listings of the same neighborhood can match, so each one is compared
+    with its neighbors instead of with every other listing.
+    """
+    by_neighborhood: dict[str, list[GroupCandidate]] = {}
+    for candidate in candidates:
+        by_neighborhood.setdefault(normalize_text(candidate.neighborhood), []).append(candidate)
     pairs = [
         (first, second)
-        for index, first in enumerate(candidates)
-        for second in candidates[index + 1 :]
+        for group in by_neighborhood.values()
+        for index, first in enumerate(group)
+        for second in group[index + 1 :]
         if are_same_apartment(first, second)
     ]
     return sorted(pairs, key=lambda pair: _difference(*pair))

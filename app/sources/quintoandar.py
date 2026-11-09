@@ -10,8 +10,8 @@ import logging
 
 import httpx
 
-from app.config import SECONDS_BETWEEN_REQUESTS, USER_AGENT
-from app.sources.base import FoundListing, SearchCriteria, SourceError
+from app.config import SECONDS_BETWEEN_REQUESTS
+from app.sources.base import FoundListing, SearchCriteria, SourceError, describe_error
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,6 @@ async def _post_search(client: httpx.AsyncClient, payload: dict) -> dict:
             SEARCH_URL,
             json=payload,
             headers={
-                "User-Agent": USER_AGENT,
                 "Origin": "https://www.quintoandar.com.br",
                 "Referer": "https://www.quintoandar.com.br/",
             },
@@ -119,7 +118,7 @@ async def _post_search(client: httpx.AsyncClient, payload: dict) -> dict:
         response.raise_for_status()
         return response.json()
     except (httpx.HTTPError, ValueError) as error:
-        raise SourceError(f"QuintoAndar: {error.__class__.__name__}") from error
+        raise SourceError(f"QuintoAndar: {describe_error(error)}") from error
 
 
 def parse_hit(item: dict) -> FoundListing:
